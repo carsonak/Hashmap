@@ -1,0 +1,15 @@
+# Build files
+build/*
+debug/*
+release-debug/*
+release/*
+
+# scripts
+*.py
+*.sh
+
+# benchmark runner
+!profile.sh
+
+# benchmark output
+data/
