@@ -499,7 +499,9 @@ HASHMAP_METHODNAME(get_empty)(HASHMAP_STRUCT_TAG *const restrict hm)
 	}
 #endif     /* EMPTY_BUCKET_STACK */
 
-	*empty_bucket = (BUCKET_STRUCT_TAG){0};
+	if (empty_bucket)
+		*empty_bucket = (BUCKET_STRUCT_TAG){0};
+
 	return (empty_bucket);
 }
 

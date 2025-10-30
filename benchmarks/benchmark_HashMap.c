@@ -94,7 +94,8 @@ int main(int argc, char **argv)
 	clock_t t0 = clock();
 
 	/* Main random workload: mix of insert/search/remove */
-	for (size_t op = 0; op < N_ops; ++op)
+	size_t op = 0;
+	for (; op < N_ops; ++op)
 	{
 		uint32_t r = xorshift32(&rng);
 		double choice = (double)(r & 0xFFFF) / (double)0xFFFF;
@@ -161,9 +162,7 @@ int main(int argc, char **argv)
 
 	clock_t t1 = clock();
 	double seconds = (double)(t1 - t0) / CLOCKS_PER_SEC;
-	printf(
-		"ops=%zu time=%.6fs ops/sec=%.0f\n", N_ops, seconds, N_ops / seconds
-	);
+	printf("ops=%zu time=%.6fs ops/sec=%.0f\n", op, seconds, op / seconds);
 
 	// CALLGRIND_START_INSTRUMENTATION;
 	// CALLGRIND_TOGGLE_COLLECT;
