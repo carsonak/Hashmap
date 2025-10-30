@@ -30,6 +30,8 @@
 
 /* Helper macro functions. */
 
+// #define POWER2_ROUNDUP_FUNC
+
 #ifdef POWER2_ROUNDUP_FUNC
 	#include "roundup.c"
 
@@ -58,11 +60,20 @@
 
 /* Forward declarations. */
 
+static bool BUCKET_METHODNAME(islive)(const BUCKET_STRUCT_TAG bkt);
+static void BUCKET_METHODNAME(unlink)(
+	HASHMAP_STRUCT_TAG *const restrict hm,
+	BUCKET_STRUCT_TAG *const restrict bkt
+) _nonnull;
+static char *BUCKET_METHODNAME(tostr)(
+	const BUCKET_STRUCT_TAG bucket,
+	HM_CONCAT(stringify_data_, HASHMAP_UNIQUE_SUFFIX) * data_tostr
+) _nonnull;
+
 static HASHMAP_STRUCT_TAG *
 	HASHMAP_METHODNAME(double_capacity)(HASHMAP_STRUCT_TAG *const hm) _nonnull;
 static BUCKET_STRUCT_TAG *
 	HASHMAP_METHODNAME(get_empty)(HASHMAP_STRUCT_TAG *const hm);
-static bool BUCKET_METHODNAME(islive)(const BUCKET_STRUCT_TAG bkt);
 static bool HASHMAP_METHODNAME(isvalid)(const HASHMAP_STRUCT_TAG *const hm);
 static BUCKET_STRUCT_TAG *HASHMAP_METHODNAME(place)(
 	HASHMAP_STRUCT_TAG *const hm, BUCKET_STRUCT_TAG bucket
@@ -70,10 +81,6 @@ static BUCKET_STRUCT_TAG *HASHMAP_METHODNAME(place)(
 static BUCKET_STRUCT_TAG *HASHMAP_METHODNAME(search_key)(
 	HASHMAP_STRUCT_TAG *const hm, const hash_ty hash, const u8mem key
 );
-static char *BUCKET_METHODNAME(tostr)(
-	const BUCKET_STRUCT_TAG bucket,
-	HM_CONCAT(stringify_data_, HASHMAP_UNIQUE_SUFFIX) * data_tostr
-) _nonnull;
 
 /*!
  * @brief check if a `Bucket` is in use.
@@ -97,9 +104,9 @@ HASHMAP_STRUCT_TAG *HASHMAP_METHODNAME(new)(len_ty capacity)
 	if (capacity < 1)
 		return (NULL);
 
-#ifdef POWER_OF_2_ROUNDUP
+#ifdef POWER2_ROUNDUP_FUNC
 	capacity = power2_roundup(capacity);
-#endif /* POWER_OF_2_ROUNDUP */
+#endif /* POWER2_ROUNDUP_FUNC */
 #ifdef CELLAR_COALESCED_HASHING
 	/* https://en.wikipedia.org/wiki/Coalesced_hashing#The_cellar */
 	const len_ty cellar_capacity = (capacity * 14) / 86;
@@ -132,17 +139,28 @@ HASHMAP_STRUCT_TAG *HASHMAP_METHODNAME(new)(len_ty capacity)
 	table->cellar = (CELLAR_STRUCT_TAG){.capacity = cellar_capacity};
 #endif /* CELLAR_COALESCED_HASHING */
 #ifdef EMPTY_BUCKET_STACK
-	len_ty i = table->capacity;
+	size_t i = table->capacity;
 
+	/* Iterating from the end of the array ensures that the buckets */
+	/* in the cellar (which is usually immediately after the main array) */
+	/* are placed at the top of the stack. */
 	#ifdef CELLAR_COALESCED_HASHING
 	i += table->cellar.capacity;
 	#endif /* CELLAR_COALESCED_HASHING */
 	table->top_pos = i;
-	for (unsigned int prev_pos = 0; i > 0; i--)
+	/* top.prev_pos should be 0. */
+	unsigned int prev_pos = 0;
+	while (i > 0)
 	{
-		table->arr[i - 1] =
-			(BUCKET_STRUCT_TAG){.next_pos = i - 1, .prev_pos = prev_pos};
-		prev_pos = i;
+		const unsigned int curr_pos = i;
+
+		i--;
+		table->arr[i] = (BUCKET_STRUCT_TAG){
+			.next_pos = curr_pos - 1,
+			.prev_pos = prev_pos,
+		};
+
+		prev_pos = curr_pos;
 	}
 
 #endif /* EMPTY_BUCKET_STACK */
@@ -180,7 +198,7 @@ void *HASHMAP_METHODNAME(delete)(
 	if (!hm)
 		return (NULL);
 
-	if (!HASHMAP_METHODNAME(isvalid)(hm))
+	if (HASHMAP_METHODNAME(isvalid)(hm) == false)
 		goto free_hashmap;
 
 	len_ty i = hm->capacity;
@@ -223,7 +241,8 @@ HASHMAP_STRUCT_TAG *HASHMAP_METHODNAME(copy)(
 	HM_CONCAT(free_mem_, HASHMAP_UNIQUE_SUFFIX) data_free
 )
 {
-	if (!hm || HASHMAP_METHODNAME(isvalid)(hm) || (data_dup && !data_free))
+	if (!hm || HASHMAP_METHODNAME(isvalid)(hm) == false ||
+		(data_dup && !data_free))
 		return (NULL);
 
 	HASHMAP_STRUCT_TAG *const restrict cpy =
@@ -294,8 +313,8 @@ static BUCKET_STRUCT_TAG *HASHMAP_METHODNAME(search_key)(
 	HASHMAP_STRUCT_TAG *const hm, const hash_ty hash, const u8mem key
 )
 {
-	unsigned int i = FOLD(hash, hm->capacity);
-	BUCKET_STRUCT_TAG *restrict walk = &hm->arr[i];
+	const unsigned int index = FOLD(hash, hm->capacity);
+	BUCKET_STRUCT_TAG *restrict walk = &hm->arr[index];
 
 	if (BUCKET_METHODNAME(islive)(*walk) == false)
 		return (NULL);
@@ -322,7 +341,7 @@ static BUCKET_STRUCT_TAG *HASHMAP_METHODNAME(search_key)(
 HASHMAP_DATATYPE *
 HASHMAP_METHODNAME(search)(HASHMAP_STRUCT_TAG *const hm, const u8mem key)
 {
-	if (!HASHMAP_METHODNAME(isvalid)(hm))
+	if (HASHMAP_METHODNAME(isvalid)(hm) == false)
 		return (NULL);
 
 	hash_ty hash;
@@ -334,9 +353,7 @@ HASHMAP_METHODNAME(search)(HASHMAP_STRUCT_TAG *const hm, const u8mem key)
 		HASHMAP_METHODNAME(search_key)(hm, hash, key);
 
 	if (!bucket)
-	{
 		return (NULL);
-	}
 
 	return (&bucket->data);
 }
@@ -358,13 +375,13 @@ HASHMAP_STRUCT_TAG *HASHMAP_METHODNAME(grow)(
 	if (capacity <= hm->capacity)
 		return (hm);
 
-#ifdef POWER_OF_2_ROUNDUP
+#ifdef POWER2_ROUNDUP_FUNC
 	HASHMAP_STRUCT_TAG *const restrict new_hm =
 		HASHMAP_METHODNAME(new)(power2_roundup(capacity));
 #else
 	HASHMAP_STRUCT_TAG *const restrict new_hm =
 		HASHMAP_METHODNAME(new)(capacity);
-#endif /* POWER_OF_2_ROUNDUP */
+#endif /* POWER2_ROUNDUP_FUNC */
 
 	if (!new_hm)
 		return (NULL);
@@ -380,8 +397,6 @@ HASHMAP_STRUCT_TAG *HASHMAP_METHODNAME(grow)(
 		if (BUCKET_METHODNAME(islive)(hm->arr[i]) == false)
 			continue;
 
-		hm->arr[i].next_pos = 0;
-		hm->arr[i].prev_pos = 0;
 		/* slots should not run out. */
 		HASHMAP_METHODNAME(place)(new_hm, hm->arr[i]);
 		hm->arr[i] = (BUCKET_STRUCT_TAG){0};
@@ -415,6 +430,34 @@ HASHMAP_METHODNAME(double_capacity)(HASHMAP_STRUCT_TAG *const restrict hm)
 }
 
 /*!
+ * @brief unlink a bucket node from a linked list.
+ *
+ * @param hm pointer to the HashMap the bucket is in.
+ * @param bkt pointer to the bucket.
+ */
+static void BUCKET_METHODNAME(unlink)(
+	HASHMAP_STRUCT_TAG *const restrict hm,
+	BUCKET_STRUCT_TAG *const restrict bkt
+)
+{
+#ifdef EMPTY_BUCKET_STACK
+	if (POS_TO_PTR(hm->arr, hm->top_pos) == bkt)
+		hm->top_pos = bkt->next_pos;
+
+#endif /* EMPTY_BUCKET_STACK */
+	const unsigned int next_pos = bkt->next_pos;
+	const unsigned int prev_pos = bkt->prev_pos;
+	if (next_pos)
+		POS_TO_PTR(hm->arr, next_pos)->prev_pos = prev_pos;
+
+	if (prev_pos)
+		POS_TO_PTR(hm->arr, prev_pos)->next_pos = next_pos;
+
+	bkt->next_pos = 0;
+	bkt->prev_pos = 0;
+}
+
+/*!
  * @brief search a `HashMap` for an empty `Bucket`.
  *
  * The Cellar if available will be searched first.
@@ -431,14 +474,13 @@ HASHMAP_METHODNAME(get_empty)(HASHMAP_STRUCT_TAG *const restrict hm)
 	if (hm->top_pos)
 	{
 		empty_bucket = POS_TO_PTR(hm->arr, hm->top_pos);
-		hm->top_pos = empty_bucket->next_pos;
-		if (hm->top_pos)
-			POS_TO_PTR(hm->arr, hm->top_pos)->prev_pos = 0;
+		BUCKET_METHODNAME(unlink)(hm, empty_bucket);
 	}
 #else
 	len_ty i = 0;
 
 	#ifdef CELLAR_COALESCED_HASHING
+	/* Check the cellar first if it has unused slots. */
 	if (hm->cellar.used < hm->cellar.capacity)
 		i += hm->cellar.capacity;
 	#endif /* CELLAR_COALESCED_HASHING */
@@ -457,6 +499,7 @@ HASHMAP_METHODNAME(get_empty)(HASHMAP_STRUCT_TAG *const restrict hm)
 	}
 #endif     /* EMPTY_BUCKET_STACK */
 
+	*empty_bucket = (BUCKET_STRUCT_TAG){0};
 	return (empty_bucket);
 }
 
@@ -472,20 +515,12 @@ static BUCKET_STRUCT_TAG *HASHMAP_METHODNAME(place)(
 {
 	const len_ty index = FOLD(bucket.hash, hm->capacity);
 
+	bucket.next_pos = 0;
+	bucket.prev_pos = 0;
 	if (BUCKET_METHODNAME(islive)(hm->arr[index]) == false)
 	{
 #ifdef EMPTY_BUCKET_STACK
-		if (hm->top_pos - 1 == index)
-			hm->top_pos = POS_TO_PTR(hm->arr, hm->top_pos)->next_pos;
-
-		const unsigned int next_pos = hm->arr[index].next_pos;
-		const unsigned int prev_pos = hm->arr[index].prev_pos;
-		if (next_pos)
-			POS_TO_PTR(hm->arr, next_pos)->prev_pos = prev_pos;
-
-		if (prev_pos)
-			POS_TO_PTR(hm->arr, prev_pos)->next_pos = next_pos;
-
+		BUCKET_METHODNAME(unlink)(hm, &hm->arr[index]);
 #endif /* EMPTY_BUCKET_STACK */
 		hm->arr[index] = bucket;
 		hm->used++;
@@ -494,10 +529,10 @@ static BUCKET_STRUCT_TAG *HASHMAP_METHODNAME(place)(
 
 	BUCKET_STRUCT_TAG *const restrict alt_bucket =
 		HASHMAP_METHODNAME(get_empty)(hm);
-
 	if (!alt_bucket)
 		return (NULL);
 
+	/* Insert the bucket at the end of the chain. */
 	for (BUCKET_STRUCT_TAG *restrict walk = &hm->arr[index]; walk;)
 	{
 		if (!walk->next_pos)
@@ -536,7 +571,7 @@ HASHMAP_DATATYPE *HASHMAP_METHODNAME(insert)(
 	HASHMAP_DATATYPE data
 )
 {
-	if (!hm || !*hm || !HASHMAP_METHODNAME(isvalid)(*hm) || !key.buf ||
+	if (!hm || !*hm || HASHMAP_METHODNAME(isvalid)(*hm) == false || !key.buf ||
 		key.len < 1)
 		return (NULL);
 
@@ -584,7 +619,8 @@ bool HASHMAP_METHODNAME(remove)(
 	const u8mem key
 )
 {
-	if (!hm || !HASHMAP_METHODNAME(isvalid)(hm) || !key.buf || key.len < 1)
+	if (!hm || HASHMAP_METHODNAME(isvalid)(hm) == false || !key.buf ||
+		key.len < 1)
 		return (false);
 
 	hash_ty hash;
@@ -597,14 +633,11 @@ bool HASHMAP_METHODNAME(remove)(
 	if (!removed)
 		return (false);
 
-	BUCKET_STRUCT_TAG *restrict prev = POS_TO_PTR(hm->arr, removed->prev_pos);
-	if (prev)
-		prev->next_pos = 0;
+	BUCKET_STRUCT_TAG *restrict walk = POS_TO_PTR(hm->arr, removed->next_pos);
 
+	BUCKET_METHODNAME(unlink)(hm, removed);
 	if (dest)
 		*dest = removed->data;
-
-	BUCKET_STRUCT_TAG *restrict walk = POS_TO_PTR(hm->arr, removed->next_pos);
 
 	*removed = (BUCKET_STRUCT_TAG){.key = u8mem_delete(removed->key)};
 	while (walk)
@@ -614,18 +647,18 @@ bool HASHMAP_METHODNAME(remove)(
 		BUCKET_STRUCT_TAG *restrict new_spot =
 			&hm->arr[FOLD(walk->hash, hm->capacity)];
 
-		/* place bucket at end of the chain. */
+		walk->prev_pos = 0;
 		if (BUCKET_METHODNAME(islive)(*new_spot) == true)
-		{
+		{ /* place bucket at end of the chain. */
 			while (new_spot->next_pos)
 				new_spot = POS_TO_PTR(hm->arr, new_spot->next_pos);
 
 			new_spot->next_pos = PTR_TO_POS(hm->arr, walk);
+			walk->prev_pos = PTR_TO_POS(hm->arr, new_spot);
 			new_spot = walk;
 		}
-		else /* place bucket at the start of chain and update the hole's position.
-			  */
-		{
+		else
+		{ /* place bucket at the start of chain and update the hole's position. */
 			*new_spot = *walk;
 			removed = walk;
 			*removed = (BUCKET_STRUCT_TAG){0};
@@ -638,10 +671,6 @@ bool HASHMAP_METHODNAME(remove)(
 #ifdef EMPTY_BUCKET_STACK
 	removed->next_pos = hm->top_pos;
 	hm->top_pos = PTR_TO_POS(hm->arr, removed);
-	if (removed->next_pos)
-		POS_TO_PTR(hm->arr, removed->next_pos)->prev_pos =
-			PTR_TO_POS(hm->arr, removed);
-
 #endif /* EMPTY_BUCKET_STACK */
 #ifdef CELLAR_COALESCED_HASHING
 	if (hm->cellar.capacity > 0 && removed >= &hm->arr[hm->capacity])
@@ -706,7 +735,7 @@ char *HASHMAP_METHODNAME(tostr)(
 	HM_CONCAT(stringify_data_, HASHMAP_UNIQUE_SUFFIX) * data_tostr
 )
 {
-	if (!HASHMAP_METHODNAME(isvalid)(hm) || !data_tostr)
+	if (HASHMAP_METHODNAME(isvalid)(hm) == false || !data_tostr)
 		return (NULL);
 
 	char *restrict hm_str = xcalloc(3, sizeof(*hm_str));

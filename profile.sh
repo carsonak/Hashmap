@@ -37,11 +37,11 @@ function run_benchmarks {
     done
 }
 
-CONFIG=release-debug
+CONFIG=release
 
 cmake --preset "$CONFIG"
 cmake --build --preset "$CONFIG" -j 4
-rm -rd data
+rm -dfrv data
 
 if [[ $1 = "-b" ]]
 then

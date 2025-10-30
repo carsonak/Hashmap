@@ -37,15 +37,11 @@ add_link_options(
 add_library(HashMap INTERFACE)
 target_include_directories(HashMap INTERFACE ${CMAKE_CURRENT_LIST_DIR})
 
-add_library(use_HashMap HashMap.c)
-target_link_libraries(use_HashMap HashMap)
-set_source_files_properties(
-    HashMap.c PROPERTIES COMPILE_OPTIONS "-Wno-implicit-fallthrough"
-)
+set(COMMON_SOURCES ${CMAKE_CURRENT_LIST_DIR}/HashMap.c)
 
-add_subdirectory(benchmarks)
 add_subdirectory(xalloc)
 add_subdirectory(u8mem)
+add_subdirectory(benchmarks)
 
 # Tests are automatically built if this is the main project
 option(HASHMAP_ENABLE_TESTING "Enable tests for bigint_calc"

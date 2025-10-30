@@ -82,8 +82,8 @@ static void murmurhash3_x86_32(
 	switch (len & 3)
 	{
 		/* clang-format off */
-	case 3: k1 ^= tail[2] << 16;
-	case 2: k1 ^= tail[1] << 8;
+	case 3: k1 ^= tail[2] << 16; /* fallthrough */
+	case 2: k1 ^= tail[1] << 8; /* fallthrough */
 	case 1: k1 ^= tail[0] << 0;
 		/* clang-format on */
 		k1 = rotl32(k1 * c1, 15) * c2;

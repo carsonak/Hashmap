@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 199309L /* clock_gettime */
 
+#include <limits.h> /* CHAR_BIT */
 #include <stdio.h>  /* fopen */
 #include <stdlib.h> /* qsort */
 #include <string.h> /* memset */
@@ -80,10 +81,10 @@ static void hmstats_print(const HashMap_int *const map)
 {
 	const struct hashmap_stats stats = hmstats_get(map);
 #ifdef CELLAR_COALESCED_HASHING
-	char strbuf[12] = {0};
+	char strbuf[sizeof(map->capacity) * CHAR_BIT * 2] = {0};
 
 	sprintf(strbuf, "%" PRI_len "+%" PRI_len, map->used, map->cellar.used);
-	printf("%8s/", strbuf);
+	printf("capacity: %8s/", strbuf);
 	sprintf(
 		strbuf, "%" PRI_len "+%" PRI_len, map->capacity, map->cellar.capacity
 	);
@@ -147,6 +148,10 @@ static bool profile_insertions(
 		goto cleanup;
 	}
 
+#ifdef CELLAR_COALESCED_HASHING
+	const len_ty initial_cellar_cap = map->cellar.capacity;
+
+#endif /* CELLAR_COALESCED_HASHING */
 	for (; i < max_inserts; i++)
 	{
 		const u8mem key = {.len = key_size, .buf = &buffer[i * key_size]};
@@ -184,7 +189,15 @@ static bool profile_insertions(
 		total_time = timespec_add(total_time, timings[i]);
 	}
 
-	printf("initial_capacity: 0/%-4" PRI_len ", ", initial_cap);
+	printf("initial_capacity: 0/");
+#ifdef CELLAR_COALESCED_HASHING
+	char strbuf[sizeof(map->capacity) * CHAR_BIT * 2] = {0};
+
+	sprintf(strbuf, "%" PRI_len "+%" PRI_len, initial_cap, initial_cellar_cap);
+	printf("%-8s", strbuf);
+#else
+	printf("%-4" PRI_len ", ", initial_cap);
+#endif /* CELLAR_COALESCED_HASHING */
 	printf("key_size: %4" PRI_len ", ", key_size);
 	hmstats_print(map);
 	printf("insertions: %4zu", i);

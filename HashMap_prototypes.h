@@ -29,8 +29,9 @@
 
 #ifndef DS_HASHMAP_HASHTYPE
 #define DS_HASHMAP_HASHTYPE
-typedef uint64_t hash_ty;
+typedef uint32_t hash_ty;
 #endif /* DS_HASHMAP_HASHTYPE */
+
 typedef struct BUCKET_STRUCT_TAG BUCKET_STRUCT_TAG;
 typedef struct CELLAR_STRUCT_TAG CELLAR_STRUCT_TAG;
 typedef struct HASHMAP_STRUCT_TAG HASHMAP_STRUCT_TAG;
