@@ -11,7 +11,7 @@
 /*!
  * @brief allocate memory with malloc and report errors.
  *
- * @param[in] size size in bytes to allocate.
+ * @param size size in bytes to allocate.
  *
  * @return a pointer to the memory area, NULL on failure.
  */
@@ -34,8 +34,8 @@ void *xmalloc(const len_ty size)
 /*!
  * @brief allocate memory with calloc and report errors.
  *
- * @param[in] items number of items to allocate memory for.
- * @param[in] sizeof_item the size in bytes of each item.
+ * @param items number of items to allocate memory for.
+ * @param sizeof_item the size in bytes of each item.
  *
  * @return a pointer to the memory area, NULL on failure.
  */
@@ -66,8 +66,8 @@ void *xcalloc(const len_ty items, const len_ty sizeof_item)
 /*!
  * @brief resize memory with realloc and report errors.
  *
- * @param[in] nullable_ptr pointer to an allocated block.
- * @param[in] size size in bytes to resize to.
+ * @param nullable_ptr pointer to an allocated block.
+ * @param size size in bytes to resize to.
  *
  * @return pointer to the resized memory area, NULL on failure.
  */
@@ -89,8 +89,8 @@ void *xrealloc(void *nullable_ptr, const len_ty size)
 /*!
  * @brief resize memory with xrealloc but free original memory on error.
  *
- * @param[in] nullable_ptr pointer to an allocated block.
- * @param[in] size size in bytes to resize to.
+ * @param nullable_ptr pointer to an allocated block.
+ * @param size size in bytes to resize to.
  *
  * @return pointer to the resized memory area, NULL on failure.
  *
@@ -108,7 +108,7 @@ void *xrealloc_free_on_fail(void *nullable_ptr, const len_ty size)
 /*!
  * @brief duplicate a string and report errors.
  *
- * @param[in] str the string to duplicate.
+ * @param str the string to duplicate.
  *
  * @return pointer to the duplicated string, NULL on failure.
  */
@@ -129,7 +129,7 @@ char *xstrdup(char const *const str)
 /*!
  * @brief free a pointer, return NULL.
  *
- * @param[in] freeable_ptr a freeable pointer.
+ * @param freeable_ptr a freeable pointer.
  *
  * @return NULL always.
  */

@@ -8,8 +8,8 @@
 #include "len_type.h"
 
 void *xfree(void *const freeable_ptr);
-/* clang-format off */
 
+/* clang-format off */
 void *xcalloc(const len_ty items, const len_ty sizeof_item) _malloc _malloc_free(xfree) _alloc_size(1, 2);
 void *xmalloc(const len_ty size) _malloc _malloc_free(xfree) _alloc_size(1);
 void *xrealloc(void *nullable_ptr, const len_ty size) _alloc_size(2);

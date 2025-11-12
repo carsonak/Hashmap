@@ -27,11 +27,11 @@ add_compile_options(
     "$<$<C_COMPILER_ID:GNU>:-Wduplicated-cond>"
     "$<$<C_COMPILER_ID:Clang>:-Wno-gcc-compat>"
     -Werror
-    "$<$<CONFIG:Debug,RelWithDebInfo>:-fsanitize=address,undefined>"
+    "$<$<CONFIG:RelWithDebInfo>:-fsanitize=address,undefined>"
     "$<$<AND:$<C_COMPILER_ID:GNU,Clang>,$<CONFIG:Debug>>:-Og>"
 )
 add_link_options(
-    "$<$<CONFIG:Debug,RelWithDebInfo>:-fsanitize=address,undefined>"
+    "$<$<CONFIG:RelWithDebInfo>:-fsanitize=address,undefined>"
 )
 
 add_library(HashMap INTERFACE)

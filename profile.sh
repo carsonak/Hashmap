@@ -29,6 +29,7 @@ function run_benchmarks {
     for exe in $@
     do  base=$(basename "$exe")
         set -x
+        # "./$exe"
         gprofng collect app -p hi -O "$result_dir/${base}.er" "$exe"
 
         # valgrind --tool=callgrind --cache-sim=yes --branch-sim=yes --compress-strings=no \
@@ -41,7 +42,6 @@ CONFIG=release
 
 cmake --preset "$CONFIG"
 cmake --build --preset "$CONFIG" -j 4
-rm -dfrv data
 
 if [[ $1 = "-b" ]]
 then

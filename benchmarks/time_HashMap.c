@@ -41,7 +41,7 @@ static struct timespec timespec_sub(struct timespec a, const struct timespec b)
 	return (a);
 }
 
-static struct hashmap_stats hmstats_get(const HashMap_int *const map)
+static struct hashmap_stats hm_stats_get(const HashMap_int *const map)
 {
 	struct hashmap_stats stats = {0};
 	size_t total_chain_len = 0;
@@ -77,9 +77,9 @@ static struct hashmap_stats hmstats_get(const HashMap_int *const map)
 	return (stats);
 }
 
-static void hmstats_print(const HashMap_int *const map)
+static void hm_stats_print(const HashMap_int *const map)
 {
-	const struct hashmap_stats stats = hmstats_get(map);
+	const struct hashmap_stats stats = hm_stats_get(map);
 #ifdef CELLAR_COALESCED_HASHING
 	char strbuf[sizeof(map->capacity) * CHAR_BIT * 2] = {0};
 
@@ -124,6 +124,14 @@ print_timings(const struct timespec *const restrict timings, const size_t len)
 	putchar('\n');
 }
 
+/*!
+ * @brief profile insertion times of a `HashMap`.
+ *
+ * @param initial_cap starting capacity of the HashMap.
+ * @param max_inserts maximum number of insertions to perform.
+ * @param key_size size of each key in bytes.
+ * @returns true on success, false on failure.
+ */
 static bool profile_insertions(
 	const len_ty initial_cap, const size_t max_inserts, const size_t key_size
 )
@@ -199,7 +207,7 @@ static bool profile_insertions(
 	printf("%-4" PRI_len ", ", initial_cap);
 #endif /* CELLAR_COALESCED_HASHING */
 	printf("key_size: %4" PRI_len ", ", key_size);
-	hmstats_print(map);
+	hm_stats_print(map);
 	printf("insertions: %4zu", i);
 	printf(", expansions: %2zu", expansions);
 	printf(", time: %ld", total_time.tv_sec);
@@ -210,7 +218,7 @@ static bool profile_insertions(
 
 	/* These are the timings for the insertion of a number of keys equal to */
 	/* 5% of the HashMap capacity till the maximum number of inserts given. */
-	printf("5%% capacity inserts time: ");
+	printf("Percent interval insertion times: ");
 	aggregate_timings(intervals, percent5, timings, i);
 	print_timings(intervals, 20);
 cleanup:
@@ -219,6 +227,15 @@ cleanup:
 	return (success);
 }
 
+/*!
+ * @brief profile search times of a `HashMap`.
+ *
+ * @param map pointer to the HashMap.
+ * @param keys array of data used as keys in the HashMap.
+ * @param key_count number of keys to search for.
+ * @param key_size size in bytes of each key.
+ * @returns true on success, false on failure.
+ */
 static bool profile_searches(
 	HashMap_int *const restrict map, unsigned char *const restrict keys,
 	const size_t key_count, const size_t key_size
@@ -258,6 +275,15 @@ static bool profile_searches(
 	return (true);
 }
 
+/*!
+ * @brief profile removal of entries from a `HashMap`.
+ *
+ * @param map pointer to the HashMap.
+ * @param keys array of data used as keys.
+ * @param key_count number of keys to remove.
+ * @param key_size size in bytes of each key.
+ * @returns true on success, false on failure.
+ */
 static bool profile_removes(
 	HashMap_int *const restrict map, unsigned char *const restrict keys,
 	const size_t key_count, const size_t key_size
@@ -269,11 +295,12 @@ static bool profile_removes(
 		xmalloc(sizeof(*timings) * key_count);
 
 	printf("key_size: %4" PRI_len ", ", key_size);
-	hmstats_print(map);
+	hm_stats_print(map);
 	for (; i < key_count; i++)
 	{
 		const u8mem key = {.len = key_size, .buf = &keys[i * key_size]};
 		struct timespec start, end;
+		int data;
 
 		if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start) != 0)
 		{
@@ -281,13 +308,14 @@ static bool profile_removes(
 			return (false);
 		}
 
-		removes += hm_int_remove(map, NULL, key);
+		removes += hm_int_remove(map, &data, key);
 		if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end) != 0)
 		{
 			perror("could not get time");
 			return (false);
 		}
 
+		(void)data;
 		timings[i] = timespec_sub(end, start);
 		total_time = timespec_add(total_time, timings[i]);
 	}
@@ -301,7 +329,7 @@ static bool profile_removes(
 
 	/* These are the timings for the removal of a number of keys equal to */
 	/* 5% of HashMap capacity  from the HashMap till empty. */
-	printf("5%% capacity inserts time: ");
+	printf("Percent interval removal times: ");
 	aggregate_timings(intervals, percent5, timings, i);
 	print_timings(intervals, 20);
 	xfree(timings);
@@ -317,7 +345,9 @@ static bool profile_general(
 	const size_t percent5 = (cap * 5) / 100 + (bool)((cap * 5) % 100);
 
 	printf("------------------------- searches -------------------------\n");
-	for (unsigned int i = 0; i < cap * HASHMAP_MAX_LOAD_FACTOR;)
+	unsigned int i = 0;
+
+	for (; i < cap * HASHMAP_MAX_LOAD_FACTOR;)
 	{
 		unsigned int j = 0;
 		for (; j < percent5 && i + j < cap * HASHMAP_MAX_LOAD_FACTOR; j++)
@@ -338,7 +368,7 @@ static bool profile_general(
 
 		i += j;
 		printf("key_size: %4" PRI_len ", ", key_size);
-		hmstats_print(map);
+		hm_stats_print(map);
 		/* All keys present. */
 		if (!profile_searches(map, buffer, i, key_size))
 			goto error_cleanup;
@@ -357,7 +387,7 @@ static bool profile_general(
 	}
 
 	printf("------------------------- removes -------------------------\n");
-	profile_removes(map, buffer, map->used, key_size);
+	profile_removes(map, buffer, i, key_size);
 
 	*table = map;
 	return (true);
