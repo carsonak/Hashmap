@@ -1,13 +1,6 @@
-/* bench_hashmap.c
- *
- * Micro-benchmark simulating how a toy-language compiler might use the HashMap:
- *  - Insert many symbol table entries (identifiers) during parsing.
- *  - Perform many lookups (name resolution / type lookup).
- *  - Emulate scope entry/exit by inserting and removing short-lived entries.
- *
+/*
  * Example usage (after building):
- *   ./bench_hashmap --ops 500000 --seed 1234 --ratio 0.7 --scopes 1000
- *
+ *   ./bench_hashmap --ops 500000 --seed 1234 --ratio 0.7 --scopes 1000 *
  */
 
 // snprintf
@@ -17,9 +10,9 @@
 #include <limits.h>  // CHAR_BIT
 #include <stdint.h>  // int32_t
 #include <stdio.h>   // snprintf
-#include <stdlib.h>  // atoi
-#include <time.h>
-#include <valgrind/callgrind.h>
+#include <stdlib.h>  // strtoul, strtod
+#include <time.h>    // clock
+// #include <valgrind/callgrind.h>
 
 #include "HashMap.h"
 #include "u8mem.h"
@@ -31,7 +24,7 @@ struct hashmap_stats
 	double avg_chain_len;
 };
 
-static struct hashmap_stats hm_stats_get(const HashMap_int *const map)
+static struct hashmap_stats hm_stats_get(const HashMap_uint *const map)
 {
 	struct hashmap_stats stats = {0};
 	size_t total_chain_len = 0;
@@ -43,7 +36,7 @@ static struct hashmap_stats hm_stats_get(const HashMap_int *const map)
 	while (i > 0)
 	{
 		i--;
-		const Bucket_int *bkt = &map->arr[i];
+		const Bucket_uint *bkt = &map->arr[i];
 
 		if (bkt->key && !bkt->prev_pos)
 		{
@@ -67,7 +60,7 @@ static struct hashmap_stats hm_stats_get(const HashMap_int *const map)
 	return (stats);
 }
 
-static void hm_stats_print(const HashMap_int *const map)
+static void hm_stats_print(const HashMap_uint *const map)
 {
 	const struct hashmap_stats stats = hm_stats_get(map);
 #ifdef CELLAR_COALESCED_HASHING
@@ -88,50 +81,47 @@ static void hm_stats_print(const HashMap_int *const map)
 	printf(", longest_chain_length: %u\n", stats.longest_chain_len);
 }
 
-/* RNG helper */
-static inline uint32_t xor_mix_32(uint32_t *const s)
-{
-	uint32_t x = *s;
-	x ^= x << 13;
-	x ^= x >> 17;
-	x ^= x << 5;
-	*s = x;
-	return x;
-}
-
 int main(int argc, char **argv)
 {
-	int max_ops = 200000;
+	size_t max_ops = 500000;
 	uint32_t seed = 42;
 	/* fraction of operations that are inserts */
-	double insert_ratio = 0.6;
+	double insert_ratio = 0.55;
 	size_t initial_capacity = 1021;
 
 	for (int opt = getopt(argc, argv, "n:s:r:c:"); opt != -1;)
 	{
+		char *end = "";
+
 		switch (opt)
 		{
 		case 'n':
-			max_ops = atoi(optarg);
+			max_ops = (size_t)strtoul(optarg, &end, 0);
 			break;
 		case 's':
-			seed = (uint32_t)atoi(optarg);
+			seed = (uint32_t)strtoul(optarg, &end, 0);
 			break;
 		case 'r':
-			insert_ratio = atof(optarg);
+			insert_ratio = strtod(optarg, &end);
 			break;
 		case 'c':
-			initial_capacity = (size_t)atoi(optarg);
+			initial_capacity = (size_t)strtoul(optarg, &end, 0);
 			break;
 		default:
 			break;
+		}
+
+		if (*end)
+		{
+			fprintf(stderr, "Invalid argument: %s\n", optarg);
+			return (1);
 		}
 
 		opt = getopt(argc, argv, "n:s:r:c:");
 	}
 
 	/* Create the map */
-	struct HashMap_int *restrict hm = hm_int_new(initial_capacity);
+	struct HashMap_uint *restrict hm = hm_uint_new(initial_capacity);
 	if (!hm)
 	{
 		fprintf(stderr, "failed to create hashmap\n");
@@ -139,17 +129,19 @@ int main(int argc, char **argv)
 	}
 
 	int status = 0;
-	uint32_t rng = seed;
+	uint32_t rng = 0;
 	unsigned char keybuf[64];
 	u8mem mem = {.len = sizeof(keybuf), .buf = keybuf};
 
+	srand(seed);
 	/* Warm-up: insert initial keys to populate the table a bit */
-	for (int i = 0; (unsigned)i < initial_capacity / 2; ++i)
+	for (size_t i = 0; i < initial_capacity / 2; ++i)
 	{
-		mem.len = snprintf((char *)mem.buf, sizeof(keybuf), "sym_%08x", i);
+		rng = rand();
+		mem.len = snprintf((char *)mem.buf, sizeof(keybuf), "sym_%08x", rng);
 		// CALLGRIND_START_INSTRUMENTATION;
 		// CALLGRIND_TOGGLE_COLLECT;
-		const int *const p = hm_int_insert(&hm, mem, i);
+		unsigned int *const p = hm_uint_insert(&hm, mem, i);
 		// CALLGRIND_TOGGLE_COLLECT;
 		// CALLGRIND_STOP_INSTRUMENTATION;
 		if (!p)
@@ -159,22 +151,24 @@ int main(int argc, char **argv)
 		}
 	}
 
-	int op = 0;
+	size_t op = 0;
+	uint32_t rng_prev = rng;
 	clock_t start = clock();
 
 	/* Main random workload: mix of insert/search/remove */
 	for (; op < max_ops; ++op)
 	{
-		const uint32_t r = xor_mix_32(&rng);
-		const double choice = (double)(r & 0xFFFF) / (double)0xFFFF;
+		rng = rand();
+		const double choice = (double)rng / (double)RAND_MAX;
 
 		if (choice < insert_ratio)
 		{
 			/* Insert new key (value = op) */
-			mem.len = snprintf((char *)mem.buf, sizeof(keybuf), "sym_%08x", r);
+			mem.len =
+				snprintf((char *)mem.buf, sizeof(keybuf), "sym_%08x", rng);
 			// CALLGRIND_START_INSTRUMENTATION;
 			// CALLGRIND_TOGGLE_COLLECT;
-			const int *const p = hm_int_insert(&hm, mem, op);
+			unsigned int *const p = hm_uint_insert(&hm, mem, op);
 			// CALLGRIND_TOGGLE_COLLECT;
 			// CALLGRIND_STOP_INSTRUMENTATION;
 			if (!p)
@@ -187,28 +181,30 @@ int main(int argc, char **argv)
 		{
 			/* Lookup existing key */
 			mem.len = snprintf(
-				(char *)mem.buf, sizeof(keybuf), "sym_%08x", xor_mix_32(&rng)
+				(char *)mem.buf, sizeof(keybuf), "sym_%08x", rng_prev
 			);
+			rng_prev = rng;
 			// CALLGRIND_START_INSTRUMENTATION;
 			// CALLGRIND_TOGGLE_COLLECT;
-			(void)hm_int_search(hm, mem);
+			(void)hm_uint_search(hm, mem);
 			// CALLGRIND_TOGGLE_COLLECT;
 			// CALLGRIND_STOP_INSTRUMENTATION;
 		}
 
 		/* Occasionally emulate entering and leaving a scope:
 		   create short-lived symbols and then remove them. */
-		if ((op & 0xFF) == 0)
+		if ((rng & 0xFF) == 0)
 		{
-			int scope_sz = 32;
-			for (int i = 0; i < scope_sz; ++i)
+			const unsigned scope_sz = (rng & 63) + 1;
+
+			for (unsigned i = 1; i <= scope_sz; ++i)
 			{
 				mem.len = snprintf(
-					(char *)mem.buf, sizeof(keybuf), "sym_%08x", r + i
+					(char *)mem.buf, sizeof(keybuf), "sym_%08x", rng + i
 				);
 				// CALLGRIND_START_INSTRUMENTATION;
 				// CALLGRIND_TOGGLE_COLLECT;
-				const int *const p = hm_int_insert(&hm, mem, i);
+				unsigned int *const p = hm_uint_insert(&hm, mem, i);
 				// CALLGRIND_TOGGLE_COLLECT;
 				// CALLGRIND_STOP_INSTRUMENTATION;
 				if (!p)
@@ -218,14 +214,14 @@ int main(int argc, char **argv)
 				}
 			}
 
-			for (int i = 0; i < scope_sz; ++i)
+			for (unsigned i = 1; i <= scope_sz; ++i)
 			{
 				mem.len = snprintf(
-					(char *)mem.buf, sizeof(keybuf), "sym_%08x", r + i
+					(char *)mem.buf, sizeof(keybuf), "sym_%08x", rng + i
 				);
 				// CALLGRIND_START_INSTRUMENTATION;
 				// CALLGRIND_TOGGLE_COLLECT;
-				hm_int_remove(hm, NULL, mem);
+				hm_uint_remove(hm, NULL, mem);
 				// CALLGRIND_TOGGLE_COLLECT;
 				// CALLGRIND_STOP_INSTRUMENTATION;
 			}
@@ -235,16 +231,17 @@ int main(int argc, char **argv)
 	const double seconds = (double)(clock() - start) / CLOCKS_PER_SEC;
 cleanup:
 	if (status == 0)
-		printf(
-			"OK ops=%d time=%.6fs ops/sec=%.0f\n", op, seconds, op / seconds
-		);
+	{
+		printf("OK ops=%zu time=%.6fs ", op, seconds);
+		printf("ops/sec=%.0f\n", op / seconds);
+	}
 	else
 		printf("FAIL ");
 
 	hm_stats_print(hm);
 	// CALLGRIND_START_INSTRUMENTATION;
 	// CALLGRIND_TOGGLE_COLLECT;
-	hm_int_delete(hm, NULL);
+	hm_uint_delete(hm, NULL);
 	// CALLGRIND_TOGGLE_COLLECT;
 	// CALLGRIND_STOP_INSTRUMENTATION;
 	return (status);

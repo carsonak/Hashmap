@@ -2,8 +2,8 @@
 
 #include "HashMap.h"
 
-#define HASHMAP_UNIQUE_SUFFIX int
-#define HASHMAP_DATATYPE int
+#define HASHMAP_UNIQUE_SUFFIX uint
+#define HASHMAP_DATATYPE unsigned int
 #include "HashMap_methods.c"
 
 #define HASHMAP_UNIQUE_SUFFIX str

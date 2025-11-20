@@ -18,9 +18,9 @@
 #define HM_CONCAT0(tok0, tok1) tok0##tok1
 #define HM_CONCAT(tok0, tok1) HM_CONCAT0(tok0, tok1)
 
-#define HASHMAP_STRUCT_TAG HM_CONCAT(HashMap_, HASHMAP_UNIQUE_SUFFIX)
-#define BUCKET_STRUCT_TAG HM_CONCAT(Bucket_, HASHMAP_UNIQUE_SUFFIX)
-#define CELLAR_STRUCT_TAG HM_CONCAT(Cellar_, HASHMAP_UNIQUE_SUFFIX)
+#define HASHMAP_TAG HM_CONCAT(HashMap_, HASHMAP_UNIQUE_SUFFIX)
+#define BUCKET_TAG HM_CONCAT(Bucket_, HASHMAP_UNIQUE_SUFFIX)
+#define CELLAR_TAG HM_CONCAT(Cellar_, HASHMAP_UNIQUE_SUFFIX)
 
 /*****************************************************************************/
 
@@ -30,9 +30,9 @@ typedef uint32_t hash_ty;
 #endif /* DS_HASHMAP_HASHTYPE */
 
 /*!
- * @brief type that holds details of a HashMap entry.
+ * @brief a hash map entry type.
  */
-typedef struct BUCKET_STRUCT_TAG
+typedef struct BUCKET_TAG
 {
 	/*! @protected position of the next colliding Bucket. */
 	size_t next_pos;
@@ -44,33 +44,32 @@ typedef struct BUCKET_STRUCT_TAG
 	hash_ty hash;
 	/*! @public data stored in the HashMap. */
 	HASHMAP_DATATYPE data;
-} BUCKET_STRUCT_TAG;
+} BUCKET_TAG;
 
 // #define CELLAR_COALESCED_HASHING
 
 #ifdef CELLAR_COALESCED_HASHING
-// #define CELLAR_STRUCT_TAG HM_CONCAT(Cellar_, HASHMAP_UNIQUE_SUFFIX)
 
 /*!
- * @brief space used to hold collided Buckets of a HashMap.
+ * @brief details of the cellar space in a hash map.
  *
  * https://en.wikipedia.org/wiki/Coalesced_hashing#The_cellar
  */
-typedef struct CELLAR_STRUCT_TAG
+typedef struct CELLAR_TAG
 {
 	/*! @public total number of slots in the cellar. */
 	len_ty capacity;
 	/*! @protected number of used Buckets in the cellar. */
 	len_ty used;
-} CELLAR_STRUCT_TAG;
+} CELLAR_TAG;
 #endif /* CELLAR_COALESCED_HASHING */
 
 // #define EMPTY_BUCKET_STACK
 
 /*!
- * @brief a hash table type.
+ * @brief details of a hash table type.
  */
-struct HASHMAP_STRUCT_TAG
+struct HASHMAP_TAG
 {
 	/*! @public total number of Buckets in the HashMap. */
 	len_ty capacity;
@@ -78,14 +77,16 @@ struct HASHMAP_STRUCT_TAG
 	len_ty used;
 #ifdef CELLAR_COALESCED_HASHING
 	/*! @protected cellar for handling colliding buckets. */
-	struct CELLAR_STRUCT_TAG cellar;
+	struct CELLAR_TAG cellar;
 #endif /* CELLAR_COALESCED_HASHING */
 #ifdef EMPTY_BUCKET_STACK
-	/*! @protected position of the bucket at the top of the stack. */
+	/*! @protected position of the bucket at the top of the unused Buckets stack. */
 	size_t top_pos;
+	/*! @protected position of the bucket at the bottom of the unused Buckets stack. */
+	size_t bottom_pos;
 #endif /* EMPTY_BUCKET_STACK */
 	/*! @protected array of Buckets. */
-	struct BUCKET_STRUCT_TAG arr[];
+	struct BUCKET_TAG arr[];
 };
 
 #define HASHMAP_MAX_LOAD_FACTOR 0.95
@@ -95,6 +96,6 @@ struct HASHMAP_STRUCT_TAG
 
 #undef HM_CONCAT0
 #undef HM_CONCAT
-#undef HASHMAP_STRUCT_TAG
-#undef BUCKET_STRUCT_TAG
-#undef CELLAR_STRUCT_TAG
+#undef HASHMAP_TAG
+#undef BUCKET_TAG
+#undef CELLAR_TAG

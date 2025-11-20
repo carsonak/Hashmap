@@ -21989,11 +21989,11 @@ TEST(hashing, test_same_input_same_output)
 TEST(hashmap_searching, test_invalid_hashmap)
 {
 	/* clang-format off */
-	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = -1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = 0, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = 1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = -1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = 0, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}),	NULL);
+	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = -1, .used = -1, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = 0, .used = -1, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = 1, .used = -1, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = -1, .used = 0, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = 0, .used = 0, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}),	NULL);
 	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = 1, .used = 0, .arr = NULL}, (u8mem){.len = 1, .buf = (unsigned char *)1}),	NULL);
 	/* clang-format on */
 }
@@ -22021,23 +22021,23 @@ TEST(expanding, test_invalid_arguments)
 	CHECK_PTR_EQ(hashmap_grow(NULL, 0), NULL);
 	CHECK_PTR_EQ(hashmap_grow(NULL, 1), NULL);
 	/* clang-format off */
-	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = -1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, 1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 0, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, 1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, 1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1}, -1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = -1, .used = -1, .arr = (BUCKET_TAG *)1}, 1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 0, .used = -1, .arr = (BUCKET_TAG *)1}, 1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = -1, .arr = (BUCKET_TAG *)1}, 1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1}, -1), NULL);
 	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = NULL}, 1), NULL);
 #ifdef CELLAR_COALESCED_HASHING
-	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (Cellar){.capacity = -1, .used = -1, .arr = NULL}}, -1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (Cellar){.capacity = 0, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}}, -1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (Cellar){.capacity = 1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}}, -1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (Cellar){.capacity = 1, .used = 1, .arr = NULL}}, -1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (Cellar){.capacity = -1, .used = -1, .arr = NULL}}, -1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (Cellar){.capacity = 0, .used = -1, .arr = (BUCKET_TAG *)1}}, -1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (Cellar){.capacity = 1, .used = -1, .arr = (BUCKET_TAG *)1}}, -1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (Cellar){.capacity = 1, .used = 1, .arr = NULL}}, -1), NULL);
 	/* clang-format on */
 #endif /* CELLAR_COALESCED_HASHING */
 }
 
 TEST(expanding, test_no_growth)
 {
-	HashMap input = {.capacity = 8, .arr = (BUCKET_STRUCT_TAG *)1};
+	HashMap input = {.capacity = 8, .arr = (BUCKET_TAG *)1};
 
 	CHECK_PTR_EQ(hashmap_grow(&input, input.capacity / 2), &input);
 	CHECK_PTR_EQ(hashmap_grow(&input, input.capacity), &input);
@@ -190376,11 +190376,11 @@ TEST(hashing, test_same_input_same_output)
 TEST(hashmap_searching, test_invalid_hashmap)
 {
 	/* clang-format off */
-	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = -1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = 0, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = 1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = -1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = 0, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}),	NULL);
+	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = -1, .used = -1, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = 0, .used = -1, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = 1, .used = -1, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = -1, .used = 0, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = 0, .used = 0, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}),	NULL);
 	CHECK_PTR_EQ(hashmap_search((HashMap){.capacity = 1, .used = 0, .arr = NULL}, (u8mem){.len = 1, .buf = (unsigned char *)1}),	NULL);
 	/* clang-format on */
 }
@@ -190408,23 +190408,23 @@ TEST(expanding, test_invalid_arguments)
 	CHECK_PTR_EQ(hashmap_grow(NULL, 0), NULL);
 	CHECK_PTR_EQ(hashmap_grow(NULL, 1), NULL);
 	/* clang-format off */
-	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = -1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, 1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 0, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, 1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, 1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1}, -1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = -1, .used = -1, .arr = (BUCKET_TAG *)1}, 1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 0, .used = -1, .arr = (BUCKET_TAG *)1}, 1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = -1, .arr = (BUCKET_TAG *)1}, 1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1}, -1), NULL);
 	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = NULL}, 1), NULL);
 #ifdef CELLAR_COALESCED_HASHING
-	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = -1, .used = -1, .arr = NULL}}, -1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = 0, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}}, -1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = 1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}}, -1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = 1, .used = 1, .arr = NULL}}, -1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (CELLAR_TAG){.capacity = -1, .used = -1, .arr = NULL}}, -1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (CELLAR_TAG){.capacity = 0, .used = -1, .arr = (BUCKET_TAG *)1}}, -1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (CELLAR_TAG){.capacity = 1, .used = -1, .arr = (BUCKET_TAG *)1}}, -1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HashMap){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (CELLAR_TAG){.capacity = 1, .used = 1, .arr = NULL}}, -1), NULL);
 	/* clang-format on */
 #endif /* CELLAR_COALESCED_HASHING */
 }
 
 TEST(expanding, test_no_growth)
 {
-	HashMap input = {.capacity = 8, .arr = (BUCKET_STRUCT_TAG *)1};
+	HashMap input = {.capacity = 8, .arr = (BUCKET_TAG *)1};
 
 	CHECK_PTR_EQ(hashmap_grow(&input, input.capacity / 2), &input);
 	CHECK_PTR_EQ(hashmap_grow(&input, input.capacity), &input);
@@ -205066,7 +205066,7 @@ func isJSType(mimeType string) bool {
 #define DA_CONCAT0(tok0, tok1) tok0##tok1
 #define DA_CONCAT(tok0, tok1) DA_CONCAT0(tok0, tok1)
 
-#define DYNAMICARRAY_STRUCT_TAG                                               \
+#define DYNAMICARRAY_TAG                                               \
 	DA_CONCAT(DynamicArray_, DYNAMICARRAY_UNIQUE_SUFFIX)
 #define DYNAMICARRAY_METHODNAME(name)                                         \
 	DA_CONCAT(DA_CONCAT(da_, DYNAMICARRAY_UNIQUE_SUFFIX), DA_CONCAT(_, name))
@@ -205078,7 +205078,7 @@ func isJSType(mimeType string) bool {
  * @param data_free function that can free elements in the array.
  */
 void DYNAMICARRAY_METHODNAME(clear)(
-	DYNAMICARRAY_STRUCT_TAG *const restrict da,
+	DYNAMICARRAY_TAG *const restrict da,
 	DA_CONCAT(free_mem_, DYNAMICARRAY_UNIQUE_SUFFIX) * data_free
 )
 {
@@ -205092,7 +205092,7 @@ void DYNAMICARRAY_METHODNAME(clear)(
 	}
 
 	da->arr = xfree(da->arr);
-	*da = (DYNAMICARRAY_STRUCT_TAG){0};
+	*da = (DYNAMICARRAY_TAG){0};
 }
 
 /*!
@@ -205103,13 +205103,13 @@ void DYNAMICARRAY_METHODNAME(clear)(
  * @returns true on success, false on error.
  */
 bool DYNAMICARRAY_METHODNAME(init)(
-	DYNAMICARRAY_STRUCT_TAG *const restrict da, const len_ty capacity
+	DYNAMICARRAY_TAG *const restrict da, const len_ty capacity
 )
 {
 	if (!da || capacity < 1)
 		return (false);
 
-	*da = (DYNAMICARRAY_STRUCT_TAG){0};
+	*da = (DYNAMICARRAY_TAG){0};
 	da->arr = xmalloc(sizeof(*(da->arr)) * capacity);
 	if (!da->arr)
 		return (false);
@@ -205126,7 +205126,7 @@ bool DYNAMICARRAY_METHODNAME(init)(
  * @returns NULL always.
  */
 void *DYNAMICARRAY_METHODNAME(del)(
-	DYNAMICARRAY_STRUCT_TAG *const restrict da,
+	DYNAMICARRAY_TAG *const restrict da,
 	DA_CONCAT(free_mem_, DYNAMICARRAY_UNIQUE_SUFFIX) * data_free
 )
 {
@@ -205140,12 +205140,12 @@ void *DYNAMICARRAY_METHODNAME(del)(
  * @param capacity positive non-zero size of the internal array.
  * @returns pointer to the `DynamicArray`, NULL on error.
  */
-DYNAMICARRAY_STRUCT_TAG *DYNAMICARRAY_METHODNAME(new)(const len_ty capacity)
+DYNAMICARRAY_TAG *DYNAMICARRAY_METHODNAME(new)(const len_ty capacity)
 {
 	if (capacity < 1)
 		return (NULL);
 
-	DYNAMICARRAY_STRUCT_TAG *const restrict da = xmalloc(sizeof(*da));
+	DYNAMICARRAY_TAG *const restrict da = xmalloc(sizeof(*da));
 
 	if (!da)
 		return (NULL);
@@ -205166,8 +205166,8 @@ DYNAMICARRAY_STRUCT_TAG *DYNAMICARRAY_METHODNAME(new)(const len_ty capacity)
  * @param data_free function that can free elements in the array.
  * @returns pointer to the `DynamicArray`, NULL on error.
  */
-DYNAMICARRAY_STRUCT_TAG *DYNAMICARRAY_METHODNAME(grow)(
-	DYNAMICARRAY_STRUCT_TAG *const restrict da, const len_ty capacity,
+DYNAMICARRAY_TAG *DYNAMICARRAY_METHODNAME(grow)(
+	DYNAMICARRAY_TAG *const restrict da, const len_ty capacity,
 	DA_CONCAT(free_mem_, DYNAMICARRAY_UNIQUE_SUFFIX) * data_free
 )
 {
@@ -205197,7 +205197,7 @@ error_cleanup:
  * @param da the `DynamicArray`.
  * @returns true if the `DynamicArray` is in a valid state, false otherwise.
  */
-static bool DYNAMICARRAY_METHODNAME(isvalid)(const DYNAMICARRAY_STRUCT_TAG da)
+static bool DYNAMICARRAY_METHODNAME(isvalid)(const DYNAMICARRAY_TAG da)
 {
 	return (
 		da.arr && da.capacity > 0 && 0 <= da.used && da.used <= da.capacity
@@ -205212,7 +205212,7 @@ static bool DYNAMICARRAY_METHODNAME(isvalid)(const DYNAMICARRAY_STRUCT_TAG da)
  * @returns pointer to the slot at index `idx` in the array, NULL on error.
  */
 DYNAMICARRAY_DATATYPE *DYNAMICARRAY_METHODNAME(get)(
-	DYNAMICARRAY_STRUCT_TAG *const restrict da, const len_ty idx
+	DYNAMICARRAY_TAG *const restrict da, const len_ty idx
 )
 {
 	if (!da || idx < 0 || !DYNAMICARRAY_METHODNAME(isvalid)(*da) ||
@@ -205236,7 +205236,7 @@ DYNAMICARRAY_DATATYPE *DYNAMICARRAY_METHODNAME(get)(
  * @returns pointer to the first slot inserted, NULL on error.
  */
 DYNAMICARRAY_DATATYPE *DYNAMICARRAY_METHODNAME(slots_insert)(
-	DYNAMICARRAY_STRUCT_TAG *const restrict da, const len_ty at_i,
+	DYNAMICARRAY_TAG *const restrict da, const len_ty at_i,
 	const len_ty n
 )
 {
@@ -205267,7 +205267,7 @@ DYNAMICARRAY_DATATYPE *DYNAMICARRAY_METHODNAME(slots_insert)(
  * @returns pointer to the first edited slot, NULL on error.
  */
 DYNAMICARRAY_DATATYPE *DYNAMICARRAY_METHODNAME(slots_remove)(
-	DYNAMICARRAY_STRUCT_TAG *const restrict da, const len_ty at_i,
+	DYNAMICARRAY_TAG *const restrict da, const len_ty at_i,
 	const len_ty n,
 	DA_CONCAT(free_mem_, DYNAMICARRAY_UNIQUE_SUFFIX) * data_free
 )
@@ -205308,7 +205308,7 @@ DYNAMICARRAY_DATATYPE *DYNAMICARRAY_METHODNAME(slots_remove)(
  * @returns pointer to the newly inserted data, NULL on failure.
  */
 DYNAMICARRAY_DATATYPE *DYNAMICARRAY_METHODNAME(insert)(
-	DYNAMICARRAY_STRUCT_TAG *const restrict da, DYNAMICARRAY_DATATYPE data,
+	DYNAMICARRAY_TAG *const restrict da, DYNAMICARRAY_DATATYPE data,
 	const len_ty idx,
 	DA_CONCAT(free_mem_, DYNAMICARRAY_UNIQUE_SUFFIX) * data_free
 )
@@ -205354,7 +205354,7 @@ error_cleanup:
  * @returns true on success, false on error.
  */
 bool DYNAMICARRAY_METHODNAME(remove)(
-	DYNAMICARRAY_STRUCT_TAG *const restrict da, const len_ty idx
+	DYNAMICARRAY_TAG *const restrict da, const len_ty idx
 )
 {
 	if (!DYNAMICARRAY_METHODNAME(get)(da, idx))
@@ -205370,7 +205370,7 @@ bool DYNAMICARRAY_METHODNAME(remove)(
 #undef DA_CONCAT0
 #undef DA_CONCAT
 
-#undef DYNAMICARRAY_STRUCT_TAG
+#undef DYNAMICARRAY_TAG
 #undef DYNAMICARRAY_METHODNAME
 // Copyright 2016 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
@@ -236136,20 +236136,20 @@ TEST_F_SETUP(hashmap_creation) { memset(tau, 0, sizeof(*tau)); }
 
 TEST_F_TEARDOWN(hashmap_creation)
 {
-	tau->output = HASHMAP_METHODNAME(delete)(tau->output, NULL);
+	tau->output = HASHMAP_METHOD(delete)(tau->output, NULL);
 }
 
 TEST(hashmap_creation, test_invalid_capacities)
 {
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(new)(-1), NULL);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(new)(0), NULL);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(new)(LEN_TY_min), NULL);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(new)(LEN_TY_max), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(new)(-1), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(new)(0), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(new)(LEN_TY_min), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(new)(LEN_TY_max), NULL);
 }
 
 TEST_F(hashmap_creation, test_creation)
 {
-	tau->output = HASHMAP_METHODNAME(new)(1);
+	tau->output = HASHMAP_METHOD(new)(1);
 	REQUIRE_PTR_NE(tau->output, NULL);
 	CHECK(tau->output->capacity == 1);
 	CHECK(tau->output->used == 0);
@@ -236165,7 +236165,7 @@ TEST_F(hashmap_creation, test_cellar_is_initialised)
 	const len_ty cellar_capacity = 10;
 #endif /* CELLAR_COALESCED_HASHING */
 
-	tau->output = HASHMAP_METHODNAME(new)(capacity);
+	tau->output = HASHMAP_METHOD(new)(capacity);
 	REQUIRE_PTR_NE(tau->output, NULL);
 	CHECK(tau->output->capacity == capacity);
 	CHECK(tau->output->used == 0);
@@ -236187,7 +236187,7 @@ TEST_F(hashmap_creation, test_cellar_is_initialised)
 // 	const len_ty capacity = LEN_TY_max - sizeof(HashMap) -
 // 							(((LEN_TY_max - sizeof(HashMap)) * 14) / 100);
 
-// 	tau->output = HASHMAP_METHODNAME(new)(capacity);
+// 	tau->output = HASHMAP_METHOD(new)(capacity);
 // 	REQUIRE_PTR_NE(tau->output, NULL);
 // 	CHECK(tau->output->capacity == capacity);
 // 	CHECK(tau->output->used == 0);
@@ -236205,15 +236205,15 @@ TEST(hashing, test_invalid_inputs)
 	hashval hash;
 
 	/* clang-format off */
-	CHECK(HASHMAP_METHODNAME(hash)(NULL, (u8mem){.len = -1, .buf = NULL}) == false);
-	CHECK(HASHMAP_METHODNAME(hash)(NULL, (u8mem){.len = -1, .buf = (unsigned char *)1}) == false);
-	CHECK(HASHMAP_METHODNAME(hash)(NULL, (u8mem){.len = 1, .buf = NULL}) == false);
-	CHECK(HASHMAP_METHODNAME(hash)(NULL, (u8mem){.len = 1, .buf = (unsigned char *)1}) == false);
-	CHECK(HASHMAP_METHODNAME(hash)(&hash, (u8mem){.len = -1, .buf = (unsigned char *)1}) == false);
-	CHECK(HASHMAP_METHODNAME(hash)(&hash, (u8mem){.len = 0, .buf = (unsigned char *)1}) == false);
-	CHECK(HASHMAP_METHODNAME(hash)(&hash, (u8mem){.len = 1, .buf = NULL}) == false);
-	CHECK(HASHMAP_METHODNAME(hash)(&hash, (u8mem){.len = 0, .buf = NULL}) == false);
-	CHECK(HASHMAP_METHODNAME(hash)(&hash, (u8mem){.len = -1, .buf = NULL}) == false);
+	CHECK(HASHMAP_METHOD(hash)(NULL, (u8mem){.len = -1, .buf = NULL}) == false);
+	CHECK(HASHMAP_METHOD(hash)(NULL, (u8mem){.len = -1, .buf = (unsigned char *)1}) == false);
+	CHECK(HASHMAP_METHOD(hash)(NULL, (u8mem){.len = 1, .buf = NULL}) == false);
+	CHECK(HASHMAP_METHOD(hash)(NULL, (u8mem){.len = 1, .buf = (unsigned char *)1}) == false);
+	CHECK(HASHMAP_METHOD(hash)(&hash, (u8mem){.len = -1, .buf = (unsigned char *)1}) == false);
+	CHECK(HASHMAP_METHOD(hash)(&hash, (u8mem){.len = 0, .buf = (unsigned char *)1}) == false);
+	CHECK(HASHMAP_METHOD(hash)(&hash, (u8mem){.len = 1, .buf = NULL}) == false);
+	CHECK(HASHMAP_METHOD(hash)(&hash, (u8mem){.len = 0, .buf = NULL}) == false);
+	CHECK(HASHMAP_METHOD(hash)(&hash, (u8mem){.len = -1, .buf = NULL}) == false);
 	/* clang-format on */
 }
 
@@ -236223,8 +236223,8 @@ TEST(hashing, test_same_input_same_output)
 	hashval h1, h2;
 
 	/* clang-format off */
-	REQUIRE(HASHMAP_METHODNAME(hash)(&h1, (u8mem){.len=sizeof(mem)/sizeof(*mem), .buf=mem}) == true);
-	REQUIRE(HASHMAP_METHODNAME(hash)(&h2, (u8mem){.len=sizeof(mem)/sizeof(*mem), .buf=mem}) == true);
+	REQUIRE(HASHMAP_METHOD(hash)(&h1, (u8mem){.len=sizeof(mem)/sizeof(*mem), .buf=mem}) == true);
+	REQUIRE(HASHMAP_METHOD(hash)(&h2, (u8mem){.len=sizeof(mem)/sizeof(*mem), .buf=mem}) == true);
 	/* clang-format on */
 	CHECK(h1 == h2);
 }
@@ -236236,12 +236236,12 @@ TEST(hashing, test_same_input_same_output)
 TEST(hashmap_searching, test_invalid_hashmap)
 {
 	/* clang-format off */
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(search)((HashMap_int){.capacity = -1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(search)((HashMap_int){.capacity = 0, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(search)((HashMap_int){.capacity = 1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(search)((HashMap_int){.capacity = -1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(search)((HashMap_int){.capacity = 0, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}),	NULL);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(search)((HashMap_int){.capacity = 1, .used = 0, .arr = NULL}, (u8mem){.len = 1, .buf = (unsigned char *)1}),	NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(search)((HashMap_int){.capacity = -1, .used = -1, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(search)((HashMap_int){.capacity = 0, .used = -1, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(search)((HashMap_int){.capacity = 1, .used = -1, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(search)((HashMap_int){.capacity = -1, .used = 0, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(search)((HashMap_int){.capacity = 0, .used = 0, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}),	NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(search)((HashMap_int){.capacity = 1, .used = 0, .arr = NULL}, (u8mem){.len = 1, .buf = (unsigned char *)1}),	NULL);
 	/* clang-format on */
 }
 
@@ -236256,41 +236256,41 @@ struct expanding
 
 TEST_F_SETUP(expanding)
 {
-	tau->input = HASHMAP_METHODNAME(new)(16);
+	tau->input = HASHMAP_METHOD(new)(16);
 	REQUIRE_PTR_NE(tau->input, NULL);
 }
 
 TEST_F_TEARDOWN(expanding)
 {
-	tau->input = HASHMAP_METHODNAME(delete)(tau->input, NULL);
+	tau->input = HASHMAP_METHOD(delete)(tau->input, NULL);
 }
 
 TEST(expanding, test_invalid_arguments)
 {
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(grow)(NULL, -1), NULL);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(grow)(NULL, 0), NULL);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(grow)(NULL, 1), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(grow)(NULL, -1), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(grow)(NULL, 0), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(grow)(NULL, 1), NULL);
 	/* clang-format off */
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(grow)(&(HashMap_int){.capacity = -1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, 1), NULL);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(grow)(&(HashMap_int){.capacity = 0, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, 1), NULL);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(grow)(&(HashMap_int){.capacity = 1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, 1), NULL);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(grow)(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1}, -1), NULL);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(grow)(&(HashMap_int){.capacity = 1, .used = 0, .arr = NULL}, 1), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(grow)(&(HashMap_int){.capacity = -1, .used = -1, .arr = (BUCKET_TAG *)1}, 1), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(grow)(&(HashMap_int){.capacity = 0, .used = -1, .arr = (BUCKET_TAG *)1}, 1), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(grow)(&(HashMap_int){.capacity = 1, .used = -1, .arr = (BUCKET_TAG *)1}, 1), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(grow)(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1}, -1), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(grow)(&(HashMap_int){.capacity = 1, .used = 0, .arr = NULL}, 1), NULL);
 #ifdef CELLAR_COALESCED_HASHING
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(grow)(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = -1, .used = -1, .arr = NULL}}, -1), NULL);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(grow)(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = 0, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}}, -1), NULL);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(grow)(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = 1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}}, -1), NULL);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(grow)(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = 1, .used = 1, .arr = NULL}}, -1), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(grow)(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (CELLAR_TAG){.capacity = -1, .used = -1, .arr = NULL}}, -1), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(grow)(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (CELLAR_TAG){.capacity = 0, .used = -1, .arr = (BUCKET_TAG *)1}}, -1), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(grow)(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (CELLAR_TAG){.capacity = 1, .used = -1, .arr = (BUCKET_TAG *)1}}, -1), NULL);
+	CHECK_PTR_EQ(HASHMAP_METHOD(grow)(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (CELLAR_TAG){.capacity = 1, .used = 1, .arr = NULL}}, -1), NULL);
 	/* clang-format on */
 #endif /* CELLAR_COALESCED_HASHING */
 }
 
 TEST(expanding, test_no_growth)
 {
-	HashMap_int input = {.capacity = 8, .arr = (BUCKET_STRUCT_TAG *)1};
+	HashMap_int input = {.capacity = 8, .arr = (BUCKET_TAG *)1};
 
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(grow)(&input, input.capacity / 2), &input);
-	CHECK_PTR_EQ(HASHMAP_METHODNAME(grow)(&input, input.capacity), &input);
+	CHECK_PTR_EQ(HASHMAP_METHOD(grow)(&input, input.capacity / 2), &input);
+	CHECK_PTR_EQ(HASHMAP_METHOD(grow)(&input, input.capacity), &input);
 }
 
 TEST_F(expanding, test_growing_a_hashmap)
@@ -236300,7 +236300,7 @@ TEST_F(expanding, test_growing_a_hashmap)
 	const len_ty initial_cellar_capacity = tau->input->cellar.capacity;
 #endif /* CELLAR_COALESCED_HASHING */
 	HashMap_int *const restrict ouput =
-		HASHMAP_METHODNAME(grow)(tau->input, tau->input->capacity * 2);
+		HASHMAP_METHOD(grow)(tau->input, tau->input->capacity * 2);
 
 	REQUIRE_PTR_NE(ouput, NULL);
 	tau->input = ouput;
@@ -275287,7 +275287,7 @@ TAU_MAIN()
 
 struct hashmap_creation
 {
-	HASHMAP_STRUCT_TAG *restrict output;
+	HASHMAP_TAG *restrict output;
 };
 
 TEST_F_SETUP(hashmap_creation) { memset(tau, 0, sizeof(*tau)); }
@@ -275394,12 +275394,12 @@ TEST(hashing, test_same_input_same_output)
 TEST(hashmap_searching, test_invalid_hashmap)
 {
 	/* clang-format off */
-	CHECK_PTR_EQ(hashmap_search((HASHMAP_STRUCT_TAG){.capacity = -1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(hashmap_search((HASHMAP_STRUCT_TAG){.capacity = 0, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(hashmap_search((HASHMAP_STRUCT_TAG){.capacity = 1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(hashmap_search((HASHMAP_STRUCT_TAG){.capacity = -1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(hashmap_search((HASHMAP_STRUCT_TAG){.capacity = 0, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}),	NULL);
-	CHECK_PTR_EQ(hashmap_search((HASHMAP_STRUCT_TAG){.capacity = 1, .used = 0, .arr = NULL}, (u8mem){.len = 1, .buf = (unsigned char *)1}),	NULL);
+	CHECK_PTR_EQ(hashmap_search((HASHMAP_TAG){.capacity = -1, .used = -1, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(hashmap_search((HASHMAP_TAG){.capacity = 0, .used = -1, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(hashmap_search((HASHMAP_TAG){.capacity = 1, .used = -1, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(hashmap_search((HASHMAP_TAG){.capacity = -1, .used = 0, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(hashmap_search((HASHMAP_TAG){.capacity = 0, .used = 0, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}),	NULL);
+	CHECK_PTR_EQ(hashmap_search((HASHMAP_TAG){.capacity = 1, .used = 0, .arr = NULL}, (u8mem){.len = 1, .buf = (unsigned char *)1}),	NULL);
 	/* clang-format on */
 }
 
@@ -275409,7 +275409,7 @@ TEST(hashmap_searching, test_invalid_hashmap)
 
 struct expanding
 {
-	HASHMAP_STRUCT_TAG *restrict input;
+	HASHMAP_TAG *restrict input;
 };
 
 TEST_F_SETUP(expanding)
@@ -275426,23 +275426,23 @@ TEST(expanding, test_invalid_arguments)
 	CHECK_PTR_EQ(hashmap_grow(NULL, 0), NULL);
 	CHECK_PTR_EQ(hashmap_grow(NULL, 1), NULL);
 	/* clang-format off */
-	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_STRUCT_TAG){.capacity = -1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, 1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_STRUCT_TAG){.capacity = 0, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, 1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_STRUCT_TAG){.capacity = 1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, 1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_STRUCT_TAG){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1}, -1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_STRUCT_TAG){.capacity = 1, .used = 0, .arr = NULL}, 1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_TAG){.capacity = -1, .used = -1, .arr = (BUCKET_TAG *)1}, 1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_TAG){.capacity = 0, .used = -1, .arr = (BUCKET_TAG *)1}, 1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_TAG){.capacity = 1, .used = -1, .arr = (BUCKET_TAG *)1}, 1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_TAG){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1}, -1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_TAG){.capacity = 1, .used = 0, .arr = NULL}, 1), NULL);
 #ifdef CELLAR_COALESCED_HASHING
-	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_STRUCT_TAG){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = -1, .used = -1, .arr = NULL}}, -1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_STRUCT_TAG){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = 0, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}}, -1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_STRUCT_TAG){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = 1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}}, -1), NULL);
-	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_STRUCT_TAG){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = 1, .used = 1, .arr = NULL}}, -1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_TAG){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (CELLAR_TAG){.capacity = -1, .used = -1, .arr = NULL}}, -1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_TAG){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (CELLAR_TAG){.capacity = 0, .used = -1, .arr = (BUCKET_TAG *)1}}, -1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_TAG){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (CELLAR_TAG){.capacity = 1, .used = -1, .arr = (BUCKET_TAG *)1}}, -1), NULL);
+	CHECK_PTR_EQ(hashmap_grow(&(HASHMAP_TAG){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (CELLAR_TAG){.capacity = 1, .used = 1, .arr = NULL}}, -1), NULL);
 	/* clang-format on */
 #endif /* CELLAR_COALESCED_HASHING */
 }
 
 TEST(expanding, test_no_growth)
 {
-	HASHMAP_STRUCT_TAG input = {.capacity = 8, .arr = (BUCKET_STRUCT_TAG *)1};
+	HASHMAP_TAG input = {.capacity = 8, .arr = (BUCKET_TAG *)1};
 
 	CHECK_PTR_EQ(hashmap_grow(&input, input.capacity / 2), &input);
 	CHECK_PTR_EQ(hashmap_grow(&input, input.capacity), &input);
@@ -275454,7 +275454,7 @@ TEST_F(expanding, test_growing_a_hashmap)
 #ifdef CELLAR_COALESCED_HASHING
 	const len_ty initial_cellar_capacity = tau->input->cellar.capacity;
 #endif /* CELLAR_COALESCED_HASHING */
-	HASHMAP_STRUCT_TAG *const restrict ouput =
+	HASHMAP_TAG *const restrict ouput =
 		hashmap_grow(tau->input, tau->input->capacity * 2);
 
 	REQUIRE_PTR_NE(ouput, NULL);
@@ -293407,11 +293407,11 @@ TEST(hashing, test_same_input_same_output)
 TEST(hashmap_searching, test_invalid_hashmap)
 {
 	/* clang-format off */
-	CHECK_PTR_EQ(hm_int_search((HashMap_int){.capacity = -1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(hm_int_search((HashMap_int){.capacity = 0, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(hm_int_search((HashMap_int){.capacity = 1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(hm_int_search((HashMap_int){.capacity = -1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
-	CHECK_PTR_EQ(hm_int_search((HashMap_int){.capacity = 0, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}),	NULL);
+	CHECK_PTR_EQ(hm_int_search((HashMap_int){.capacity = -1, .used = -1, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(hm_int_search((HashMap_int){.capacity = 0, .used = -1, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(hm_int_search((HashMap_int){.capacity = 1, .used = -1, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(hm_int_search((HashMap_int){.capacity = -1, .used = 0, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}), NULL);
+	CHECK_PTR_EQ(hm_int_search((HashMap_int){.capacity = 0, .used = 0, .arr = (BUCKET_TAG *)1}, (u8mem){.len = 1, .buf = (unsigned char *)1}),	NULL);
 	CHECK_PTR_EQ(hm_int_search((HashMap_int){.capacity = 1, .used = 0, .arr = NULL}, (u8mem){.len = 1, .buf = (unsigned char *)1}),	NULL);
 	/* clang-format on */
 }
@@ -293439,23 +293439,23 @@ TEST(expanding, test_invalid_arguments)
 	CHECK_PTR_EQ(hm_int_grow(NULL, 0), NULL);
 	CHECK_PTR_EQ(hm_int_grow(NULL, 1), NULL);
 	/* clang-format off */
-	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = -1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, 1), NULL);
-	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 0, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, 1), NULL);
-	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}, 1), NULL);
-	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1}, -1), NULL);
+	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = -1, .used = -1, .arr = (BUCKET_TAG *)1}, 1), NULL);
+	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 0, .used = -1, .arr = (BUCKET_TAG *)1}, 1), NULL);
+	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = -1, .arr = (BUCKET_TAG *)1}, 1), NULL);
+	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1}, -1), NULL);
 	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = NULL}, 1), NULL);
 #ifdef CELLAR_COALESCED_HASHING
-	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = -1, .used = -1, .arr = NULL}}, -1), NULL);
-	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = 0, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}}, -1), NULL);
-	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = 1, .used = -1, .arr = (BUCKET_STRUCT_TAG *)1}}, -1), NULL);
-	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_STRUCT_TAG *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = 1, .used = 1, .arr = NULL}}, -1), NULL);
+	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (CELLAR_TAG){.capacity = -1, .used = -1, .arr = NULL}}, -1), NULL);
+	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (CELLAR_TAG){.capacity = 0, .used = -1, .arr = (BUCKET_TAG *)1}}, -1), NULL);
+	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (CELLAR_TAG){.capacity = 1, .used = -1, .arr = (BUCKET_TAG *)1}}, -1), NULL);
+	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (BUCKET_TAG *)1, .cellar = (CELLAR_TAG){.capacity = 1, .used = 1, .arr = NULL}}, -1), NULL);
 	/* clang-format on */
 #endif /* CELLAR_COALESCED_HASHING */
 }
 
 TEST(expanding, test_no_growth)
 {
-	HashMap_int input = {.capacity = 8, .arr = (BUCKET_STRUCT_TAG *)1};
+	HashMap_int input = {.capacity = 8, .arr = (BUCKET_TAG *)1};
 
 	CHECK_PTR_EQ(hm_int_grow(&input, input.capacity / 2), &input);
 	CHECK_PTR_EQ(hm_int_grow(&input, input.capacity), &input);
@@ -356580,10 +356580,10 @@ TEST(expanding, test_invalid_arguments)
 	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (Bucket_int *)1}, -1), NULL);
 	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = NULL}, 1), NULL);
 #ifdef CELLAR_COALESCED_HASHING
-	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (Bucket_int *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = -1, .used = -1, .arr = NULL}}, -1), NULL);
-	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (Bucket_int *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = 0, .used = -1, .arr = (Bucket_int *)1}}, -1), NULL);
-	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (Bucket_int *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = 1, .used = -1, .arr = (Bucket_int *)1}}, -1), NULL);
-	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (Bucket_int *)1, .cellar = (CELLAR_STRUCT_TAG){.capacity = 1, .used = 1, .arr = NULL}}, -1), NULL);
+	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (Bucket_int *)1, .cellar = (CELLAR_TAG){.capacity = -1, .used = -1, .arr = NULL}}, -1), NULL);
+	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (Bucket_int *)1, .cellar = (CELLAR_TAG){.capacity = 0, .used = -1, .arr = (Bucket_int *)1}}, -1), NULL);
+	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (Bucket_int *)1, .cellar = (CELLAR_TAG){.capacity = 1, .used = -1, .arr = (Bucket_int *)1}}, -1), NULL);
+	CHECK_PTR_EQ(hm_int_grow(&(HashMap_int){.capacity = 1, .used = 0, .arr = (Bucket_int *)1, .cellar = (CELLAR_TAG){.capacity = 1, .used = 1, .arr = NULL}}, -1), NULL);
 	/* clang-format on */
 #endif /* CELLAR_COALESCED_HASHING */
 }

@@ -22,14 +22,14 @@
 #define HM_CONCAT0(tok0, tok1) tok0##tok1
 #define HM_CONCAT(tok0, tok1) HM_CONCAT0(tok0, tok1)
 
-#define HASHMAP_STRUCT_TAG HM_CONCAT(HashMap_, HASHMAP_UNIQUE_SUFFIX)
+#define HASHMAP_TAG HM_CONCAT(HashMap_, HASHMAP_UNIQUE_SUFFIX)
 
-#define HASHMAP_METHODNAME(name)                                              \
+#define HASHMAP_METHOD(name)                                                  \
 	HM_CONCAT(HM_CONCAT(hm_, HASHMAP_UNIQUE_SUFFIX), HM_CONCAT(_, name))
 
 /*****************************************************************************/
 
-typedef struct HASHMAP_STRUCT_TAG HASHMAP_STRUCT_TAG;
+typedef struct HASHMAP_TAG HASHMAP_TAG;
 #ifndef DS_HASHMAP_HASHTYPE
 	#define DS_HASHMAP_HASHTYPE
 typedef uint32_t hash_ty;
@@ -37,37 +37,35 @@ typedef uint32_t hash_ty;
 
 /* alloc */
 
-void *HASHMAP_METHODNAME(delete)(
-	HASHMAP_STRUCT_TAG *const restrict hm,
+void *HASHMAP_METHOD(delete)(
+	HASHMAP_TAG *const restrict hm,
 	HM_CONCAT(free_mem_, HASHMAP_UNIQUE_SUFFIX) * data_free
 );
-HASHMAP_STRUCT_TAG *HASHMAP_METHODNAME(new)(
-	len_ty capacity
-) _malloc _malloc_free(HASHMAP_METHODNAME(delete), 1);
-HASHMAP_STRUCT_TAG *HASHMAP_METHODNAME(dup)(
-	const HASHMAP_STRUCT_TAG *const restrict hm,
+HASHMAP_TAG *HASHMAP_METHOD(new)(len_ty capacity) _malloc _malloc_free(
+	HASHMAP_METHOD(delete), 1
+);
+HASHMAP_TAG *HASHMAP_METHOD(dup)(
+	const HASHMAP_TAG *const restrict hm,
 	HM_CONCAT(duplicate_, HASHMAP_UNIQUE_SUFFIX) data_dup,
 	HM_CONCAT(free_mem_, HASHMAP_UNIQUE_SUFFIX) data_free
-) _malloc _malloc_free(HASHMAP_METHODNAME(delete), 1);
-HASHMAP_STRUCT_TAG *HASHMAP_METHODNAME(grow)(
-	HASHMAP_STRUCT_TAG *const hm, const len_ty capacity
-);
+) _malloc _malloc_free(HASHMAP_METHOD(delete), 1);
+HASHMAP_TAG *
+	HASHMAP_METHOD(grow)(HASHMAP_TAG *const hm, const len_ty capacity);
 
-HASHMAP_DATATYPE *HASHMAP_METHODNAME(insert)(
-	HASHMAP_STRUCT_TAG *restrict *const hm, const u8mem key,
-	HASHMAP_DATATYPE data
+HASHMAP_DATATYPE *HASHMAP_METHOD(insert)(
+	HASHMAP_TAG *restrict *const hm, const u8mem key, HASHMAP_DATATYPE data
 );
-bool HASHMAP_METHODNAME(hash)(hash_ty *const dest, const u8mem key);
+bool HASHMAP_METHOD(hash)(hash_ty *const dest, const u8mem key);
 HASHMAP_DATATYPE *
-	HASHMAP_METHODNAME(search)(HASHMAP_STRUCT_TAG *const hm, const u8mem key);
+	HASHMAP_METHOD(search)(HASHMAP_TAG *const hm, const u8mem key);
 
-bool HASHMAP_METHODNAME(remove)(
-	HASHMAP_STRUCT_TAG *restrict hm, HASHMAP_DATATYPE *const restrict dest,
+bool HASHMAP_METHOD(remove)(
+	HASHMAP_TAG *restrict hm, HASHMAP_DATATYPE *const restrict dest,
 	const u8mem key
 );
 
-char *HASHMAP_METHODNAME(tostr)(
-	const HASHMAP_STRUCT_TAG *const restrict hm,
+char *HASHMAP_METHOD(tostr)(
+	const HASHMAP_TAG *const restrict hm,
 	HM_CONCAT(stringify_data_, HASHMAP_UNIQUE_SUFFIX) * data_tostr
 );
 
@@ -76,5 +74,5 @@ char *HASHMAP_METHODNAME(tostr)(
 
 #undef HM_CONCAT0
 #undef HM_CONCAT
-#undef HASHMAP_STRUCT_TAG
-#undef HASHMAP_METHODNAME
+#undef HASHMAP_TAG
+#undef HASHMAP_METHOD

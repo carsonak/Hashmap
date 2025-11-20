@@ -41,7 +41,7 @@ static struct timespec timespec_sub(struct timespec a, const struct timespec b)
 	return (a);
 }
 
-static struct hashmap_stats hm_stats_get(const HashMap_int *const map)
+static struct hashmap_stats hm_stats_get(const HashMap_uint *const map)
 {
 	struct hashmap_stats stats = {0};
 	size_t total_chain_len = 0;
@@ -53,7 +53,7 @@ static struct hashmap_stats hm_stats_get(const HashMap_int *const map)
 	while (i > 0)
 	{
 		i--;
-		const Bucket_int *bkt = &map->arr[i];
+		const Bucket_uint *bkt = &map->arr[i];
 
 		if (bkt->key && !bkt->prev_pos)
 		{
@@ -77,7 +77,7 @@ static struct hashmap_stats hm_stats_get(const HashMap_int *const map)
 	return (stats);
 }
 
-static void hm_stats_print(const HashMap_int *const map)
+static void hm_stats_print(const HashMap_uint *const map)
 {
 	const struct hashmap_stats stats = hm_stats_get(map);
 #ifdef CELLAR_COALESCED_HASHING
@@ -145,7 +145,7 @@ static bool profile_insertions(
 
 	size_t i = 0, expansions = 0;
 	struct timespec total_time = {0};
-	HashMap_int *restrict map = hm_int_new(initial_cap);
+	HashMap_uint *restrict map = hm_uint_new(initial_cap);
 	bool success = true;
 	struct timespec *restrict timings =
 		xmalloc(sizeof(*timings) * max_inserts);
@@ -173,7 +173,7 @@ static bool profile_insertions(
 			goto cleanup;
 		}
 
-		const int *const data = hm_int_insert(&map, key, i);
+		unsigned int *const data = hm_uint_insert(&map, key, i);
 
 		if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end) != 0)
 		{
@@ -223,7 +223,7 @@ static bool profile_insertions(
 	print_timings(intervals, 20);
 cleanup:
 	xfree(timings);
-	hm_int_delete(map, NULL);
+	hm_uint_delete(map, NULL);
 	return (success);
 }
 
@@ -237,7 +237,7 @@ cleanup:
  * @returns true on success, false on failure.
  */
 static bool profile_searches(
-	HashMap_int *const restrict map, unsigned char *const restrict keys,
+	HashMap_uint *const restrict map, unsigned char *const restrict keys,
 	const size_t key_count, const size_t key_size
 )
 {
@@ -255,7 +255,7 @@ static bool profile_searches(
 			return (false);
 		}
 
-		const int *const restrict d = hm_int_search(map, key);
+		unsigned int *const restrict d = hm_uint_search(map, key);
 
 		if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end) != 0)
 		{
@@ -285,7 +285,7 @@ static bool profile_searches(
  * @returns true on success, false on failure.
  */
 static bool profile_removes(
-	HashMap_int *const restrict map, unsigned char *const restrict keys,
+	HashMap_uint *const restrict map, unsigned char *const restrict keys,
 	const size_t key_count, const size_t key_size
 )
 {
@@ -300,7 +300,7 @@ static bool profile_removes(
 	{
 		const u8mem key = {.len = key_size, .buf = &keys[i * key_size]};
 		struct timespec start, end;
-		int data;
+		unsigned int data;
 
 		if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start) != 0)
 		{
@@ -308,7 +308,7 @@ static bool profile_removes(
 			return (false);
 		}
 
-		removes += hm_int_remove(map, &data, key);
+		removes += hm_uint_remove(map, &data, key);
 		if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end) != 0)
 		{
 			perror("could not get time");
@@ -337,10 +337,10 @@ static bool profile_removes(
 }
 
 static bool profile_general(
-	HashMap_int *restrict *const restrict table, const len_ty key_size
+	HashMap_uint *restrict *const restrict table, const len_ty key_size
 )
 {
-	HashMap_int *restrict map = *table;
+	HashMap_uint *restrict map = *table;
 	const size_t cap = map->capacity;
 	const size_t percent5 = (cap * 5) / 100 + (bool)((cap * 5) % 100);
 
@@ -355,7 +355,7 @@ static bool profile_general(
 			const u8mem key = {
 				.len = key_size, .buf = &buffer[(i + j) * key_size]
 			};
-			const int *const restrict d = hm_int_insert(&map, key, i + j);
+			unsigned int *const restrict d = hm_uint_insert(&map, key, i + j);
 
 			if (!d)
 			{
@@ -445,14 +445,14 @@ int main(int argc, char *argv[])
 		}
 
 		/* Using prime number for initial capacity. */
-		HashMap_int *restrict map = hm_int_new(8191);
+		HashMap_uint *restrict map = hm_uint_new(8191);
 
 		if (!map)
 			return (1);
 
 		const bool success = profile_general(&map, key_sizes[i]);
 
-		hm_int_delete(map, NULL);
+		hm_uint_delete(map, NULL);
 		if (!success)
 			return (1);
 
