@@ -12,7 +12,6 @@
 #include <stdio.h>   // snprintf
 #include <stdlib.h>  // strtoul, strtod
 #include <time.h>    // clock
-// #include <valgrind/callgrind.h>
 
 #include "HashMap.h"
 #include "u8mem.h"
@@ -83,11 +82,11 @@ static void hm_stats_print(const HashMap_uint *const map)
 
 int main(int argc, char **argv)
 {
-	size_t max_ops = 500000;
-	uint32_t seed = 42;
+	size_t max_ops = 250000;
+	unsigned int seed = 42;
 	/* fraction of operations that are inserts */
 	double insert_ratio = 0.55;
-	size_t initial_capacity = 1021;
+	size_t initial_capacity = 4093;
 
 	for (int opt = getopt(argc, argv, "n:s:r:c:"); opt != -1;)
 	{
@@ -99,7 +98,7 @@ int main(int argc, char **argv)
 			max_ops = (size_t)strtoul(optarg, &end, 0);
 			break;
 		case 's':
-			seed = (uint32_t)strtoul(optarg, &end, 0);
+			seed = (unsigned int)strtoul(optarg, &end, 0);
 			break;
 		case 'r':
 			insert_ratio = strtod(optarg, &end);
@@ -129,7 +128,7 @@ int main(int argc, char **argv)
 	}
 
 	int status = 0;
-	uint32_t rng = 0;
+	unsigned int rng = 0;
 	unsigned char keybuf[64];
 	u8mem mem = {.len = sizeof(keybuf), .buf = keybuf};
 
@@ -139,11 +138,8 @@ int main(int argc, char **argv)
 	{
 		rng = rand();
 		mem.len = snprintf((char *)mem.buf, sizeof(keybuf), "sym_%08x", rng);
-		// CALLGRIND_START_INSTRUMENTATION;
-		// CALLGRIND_TOGGLE_COLLECT;
 		unsigned int *const p = hm_uint_insert(&hm, mem, i);
-		// CALLGRIND_TOGGLE_COLLECT;
-		// CALLGRIND_STOP_INSTRUMENTATION;
+
 		if (!p)
 		{
 			status = 1;
@@ -152,7 +148,7 @@ int main(int argc, char **argv)
 	}
 
 	size_t op = 0;
-	uint32_t rng_prev = rng;
+	unsigned int rng_prev = rng;
 	clock_t start = clock();
 
 	/* Main random workload: mix of insert/search/remove */
@@ -166,11 +162,8 @@ int main(int argc, char **argv)
 			/* Insert new key (value = op) */
 			mem.len =
 				snprintf((char *)mem.buf, sizeof(keybuf), "sym_%08x", rng);
-			// CALLGRIND_START_INSTRUMENTATION;
-			// CALLGRIND_TOGGLE_COLLECT;
 			unsigned int *const p = hm_uint_insert(&hm, mem, op);
-			// CALLGRIND_TOGGLE_COLLECT;
-			// CALLGRIND_STOP_INSTRUMENTATION;
+
 			if (!p)
 			{
 				status = 1;
@@ -184,29 +177,23 @@ int main(int argc, char **argv)
 				(char *)mem.buf, sizeof(keybuf), "sym_%08x", rng_prev
 			);
 			rng_prev = rng;
-			// CALLGRIND_START_INSTRUMENTATION;
-			// CALLGRIND_TOGGLE_COLLECT;
-			(void)hm_uint_search(hm, mem);
-			// CALLGRIND_TOGGLE_COLLECT;
-			// CALLGRIND_STOP_INSTRUMENTATION;
+			unsigned int *const p = hm_uint_search(hm, mem);
+			(void)p;
 		}
 
 		/* Occasionally emulate entering and leaving a scope:
 		   create short-lived symbols and then remove them. */
-		if ((rng & 0xFF) == 0)
+		if ((rng & 0x7F) == 0)
 		{
-			const unsigned scope_sz = (rng & 63) + 1;
+			const unsigned scope_sz = (rng & 31) + 1;
 
 			for (unsigned i = 1; i <= scope_sz; ++i)
 			{
 				mem.len = snprintf(
 					(char *)mem.buf, sizeof(keybuf), "sym_%08x", rng + i
 				);
-				// CALLGRIND_START_INSTRUMENTATION;
-				// CALLGRIND_TOGGLE_COLLECT;
 				unsigned int *const p = hm_uint_insert(&hm, mem, i);
-				// CALLGRIND_TOGGLE_COLLECT;
-				// CALLGRIND_STOP_INSTRUMENTATION;
+
 				if (!p)
 				{
 					status = 1;
@@ -219,11 +206,7 @@ int main(int argc, char **argv)
 				mem.len = snprintf(
 					(char *)mem.buf, sizeof(keybuf), "sym_%08x", rng + i
 				);
-				// CALLGRIND_START_INSTRUMENTATION;
-				// CALLGRIND_TOGGLE_COLLECT;
 				hm_uint_remove(hm, NULL, mem);
-				// CALLGRIND_TOGGLE_COLLECT;
-				// CALLGRIND_STOP_INSTRUMENTATION;
 			}
 		}
 	}
@@ -239,10 +222,6 @@ cleanup:
 		printf("FAIL ");
 
 	hm_stats_print(hm);
-	// CALLGRIND_START_INSTRUMENTATION;
-	// CALLGRIND_TOGGLE_COLLECT;
 	hm_uint_delete(hm, NULL);
-	// CALLGRIND_TOGGLE_COLLECT;
-	// CALLGRIND_STOP_INSTRUMENTATION;
 	return (status);
 }
