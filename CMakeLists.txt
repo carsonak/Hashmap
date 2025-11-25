@@ -39,6 +39,7 @@ target_include_directories(HashMap INTERFACE ${CMAKE_CURRENT_LIST_DIR})
 
 set(COMMON_SOURCES ${CMAKE_CURRENT_LIST_DIR}/HashMap.c)
 
+add_subdirectory(arena-alloc)
 add_subdirectory(xalloc)
 add_subdirectory(u8mem)
 add_subdirectory(benchmarks)

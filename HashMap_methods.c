@@ -18,7 +18,7 @@
 
 #define COMMON_CALLBACKS_UNIQUE_SUFFIX HASHMAP_UNIQUE_SUFFIX
 #define COMMON_CALLBACKS_DATATYPE HASHMAP_DATATYPE
-#include "common_callback_types.h"
+#include "common_generic_callback_types.h"
 
 #if !defined FNV32A_HASH_FUNC
 	#ifndef MURMURHASH3_x86_32_HASH_FUNC

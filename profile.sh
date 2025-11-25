@@ -102,7 +102,7 @@ do case "$1" in
 done
 
 SUITE="${1:-timing}"
-if [[ $SUITE = "gprofng" ]] || [[ $SUITE = "cachegrind" ]]
+if [[ $CONFIG = "release" ]]
 then export CFLAGS="${CFLAGS:-} -g"
 fi
 

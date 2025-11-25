@@ -1,3 +1,6 @@
 [submodule "tau"]
 	path = tau
 	url = https://github.com/carsonak/tau.git
+[submodule "arena-alloc"]
+	path = arena-alloc
+	url = https://github.com/carsonak/arena-alloc.git
