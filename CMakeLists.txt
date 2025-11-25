@@ -44,6 +44,8 @@ add_subdirectory(xalloc)
 add_subdirectory(u8mem)
 add_subdirectory(benchmarks)
 
+target_link_libraries(HashMap INTERFACE arena)
+
 # Tests are automatically built if this is the main project
 option(HASHMAP_ENABLE_TESTING "Enable tests for bigint_calc"
        ${PROJECT_IS_TOP_LEVEL}

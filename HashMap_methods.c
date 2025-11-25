@@ -46,23 +46,10 @@
 
 /***************************** MACRO FUNCTIONS *******************************/
 
-// #define POWER2_ROUNDUP_FUNC
-
-#ifdef POWER2_ROUNDUP_FUNC
-	#include "roundup.c"
-
-	#define FOLD(hash, capacity) (hash & (capacity - 1))
-#else
-	#define FOLD(hash, capacity) (hash % capacity)
-#endif /* POWER2_ROUNDUP_FUNC */
+#define FOLD(hash, capacity) (hash % capacity)
 
 #define POS_TO_PTR(array, position) ((position) > 0 ? (array) + (position) - 1 : NULL)
 #define PTR_TO_POS(array, pointer) ((pointer) ? (pointer) - (array) + 1 : 0)
-
-/* clang-format off */
-#define ASSERT_MAX_POSITION(position, max) assert((size_t)(position) <= (size_t)(max) && "position out of bounds")
-#define ASSERT_POINTER_BOUNDS(pointer, min, max) assert((pointer) == NULL || ((pointer) >= (min) && (pointer) <= (max) && "pointer out of bounds"))
-/* clang-format on */
 
 /***************************** STATIC FUNCTIONS ******************************/
 
@@ -153,11 +140,6 @@ static BUCKET_TAG *HASHMAP_METHOD(search_list)(
 			return (walk);
 
 		walk = POS_TO_PTR(hm->arr, walk->next_pos);
-#ifdef CELLAR_COALESCED_HASHING /* clang-format off */
-		ASSERT_POINTER_BOUNDS(	walk, hm->arr, hm->arr + hm->capacity + hm->cellar.capacity - 1	);
-#else  /* clang-format on */
-		ASSERT_POINTER_BOUNDS(walk, hm->arr, hm->arr + hm->capacity - 1);
-#endif /* CELLAR_COALESCED_HASHING */
 	}
 
 	return (NULL);
@@ -176,13 +158,6 @@ BUCKET_METHOD(unlink)(HASHMAP_TAG *const restrict hm, BUCKET_TAG *const bucket)
 	BUCKET_TAG *const top = POS_TO_PTR(hm->arr, hm->top_pos);
 	BUCKET_TAG *const bottom = POS_TO_PTR(hm->arr, hm->bottom_pos);
 
-	#ifdef CELLAR_COALESCED_HASHING /* clang-format off */
-	ASSERT_POINTER_BOUNDS(top, hm->arr, hm->arr + hm->capacity + hm->cellar.capacity - 1);
-	ASSERT_POINTER_BOUNDS(bottom, hm->arr, hm->arr + hm->capacity + hm->cellar.capacity - 1);
-	#else  /* clang-format on */
-	ASSERT_POINTER_BOUNDS(top, hm->arr, hm->arr + hm->capacity - 1);
-	ASSERT_POINTER_BOUNDS(bottom, hm->arr, hm->arr + hm->capacity - 1);
-	#endif /* CELLAR_COALESCED_HASHING */
 	if (top == bucket)
 		hm->top_pos = bucket->next_pos;
 
@@ -193,13 +168,6 @@ BUCKET_METHOD(unlink)(HASHMAP_TAG *const restrict hm, BUCKET_TAG *const bucket)
 	BUCKET_TAG *const next = POS_TO_PTR(hm->arr, bucket->next_pos);
 	BUCKET_TAG *const prev = POS_TO_PTR(hm->arr, bucket->prev_pos);
 
-#ifdef CELLAR_COALESCED_HASHING /* clang-format off */
-	ASSERT_POINTER_BOUNDS(next, hm->arr, hm->arr + hm->capacity + hm->cellar.capacity - 1);
-	ASSERT_POINTER_BOUNDS(prev, hm->arr, hm->arr + hm->capacity + hm->cellar.capacity - 1);
-#else  /* clang-format on */
-	ASSERT_POINTER_BOUNDS(next, hm->arr, hm->arr + hm->capacity - 1);
-	ASSERT_POINTER_BOUNDS(prev, hm->arr, hm->arr + hm->capacity - 1);
-#endif /* CELLAR_COALESCED_HASHING */
 	if (next)
 		next->prev_pos = bucket->prev_pos;
 
@@ -225,11 +193,6 @@ static void BUCKET_METHOD(insert_after)(
 	assert(bucket != NULL);
 	const size_t bucket_pos = PTR_TO_POS(hm->arr, bucket);
 	assert(bucket_pos > 0 && "position out of bounds");
-#ifdef CELLAR_COALESCED_HASHING
-	ASSERT_MAX_POSITION(bucket_pos, hm->capacity + hm->cellar.capacity);
-#else
-	ASSERT_MAX_POSITION(bucket_pos, hm->capacity);
-#endif /* CELLAR_COALESCED_HASHING */
 
 	if (!here)
 	{
@@ -246,13 +209,6 @@ static void BUCKET_METHOD(insert_after)(
 	BUCKET_TAG *const next = POS_TO_PTR(hm->arr, here->next_pos);
 	const size_t here_pos = PTR_TO_POS(hm->arr, here);
 	assert(here_pos > 0 && "position out of bounds");
-#ifdef CELLAR_COALESCED_HASHING /* clang-format off */
-	ASSERT_POINTER_BOUNDS(next, hm->arr, hm->arr + hm->capacity + hm->cellar.capacity - 1);
-	ASSERT_MAX_POSITION(here_pos, hm->capacity + hm->cellar.capacity);
-#else  /* clang-format on */
-	ASSERT_POINTER_BOUNDS(next, hm->arr, hm->arr + hm->capacity - 1);
-	ASSERT_MAX_POSITION(here_pos, hm->capacity);
-#endif /* CELLAR_COALESCED_HASHING */
 
 	bucket->next_pos = here->next_pos;
 	bucket->prev_pos = here_pos;
@@ -281,11 +237,6 @@ void BUCKET_METHOD(insert_before)(
 	assert(bucket != NULL);
 	const size_t bucket_pos = PTR_TO_POS(hm->arr, bucket);
 	assert(bucket_pos > 0 && "position out of bounds");
-#ifdef CELLAR_COALESCED_HASHING
-	ASSERT_MAX_POSITION(bucket_pos, hm->capacity + hm->cellar.capacity);
-#else
-	ASSERT_MAX_POSITION(bucket_pos, hm->capacity);
-#endif /* CELLAR_COALESCED_HASHING */
 
 	if (!here)
 	{
@@ -302,13 +253,6 @@ void BUCKET_METHOD(insert_before)(
 	BUCKET_TAG *const prev = POS_TO_PTR(hm->arr, here->prev_pos);
 	const size_t here_pos = PTR_TO_POS(hm->arr, here);
 	assert(here_pos > 0 && "position out of bounds");
-#ifdef CELLAR_COALESCED_HASHING /* clang-format off */
-	ASSERT_POINTER_BOUNDS(prev, hm->arr, hm->arr + hm->capacity + hm->cellar.capacity - 1);
-	ASSERT_MAX_POSITION(here_pos, hm->capacity + hm->cellar.capacity);
-#else  /* clang-format on */
-	ASSERT_POINTER_BOUNDS(prev, hm->arr, hm->arr + hm->capacity - 1);
-	ASSERT_MAX_POSITION(here_pos, hm->capacity);
-#endif /* CELLAR_COALESCED_HASHING */
 
 	bucket->next_pos = here_pos;
 	bucket->prev_pos = here->prev_pos;
@@ -336,11 +280,6 @@ static BUCKET_TAG *HASHMAP_METHOD(get_empty)(HASHMAP_TAG *const hm)
 #ifdef EMPTY_BUCKET_STACK
 
 	empty_bucket = POS_TO_PTR(hm->arr, hm->top_pos);
-	#ifdef CELLAR_COALESCED_HASHING /* clang-format off */
-	ASSERT_POINTER_BOUNDS(empty_bucket, hm->arr, hm->arr + hm->capacity + hm->cellar.capacity - 1);
-	#else
-	ASSERT_POINTER_BOUNDS(empty_bucket, hm->arr, hm->arr + hm->capacity - 1);
-	#endif /* CELLAR_COALESCED_HASHING */ /* clang-format on */
 	if (empty_bucket)
 		BUCKET_METHOD(unlink)(hm, empty_bucket);
 #else
@@ -386,14 +325,7 @@ static BUCKET_TAG *BUCKET_METHOD(list_tail)(
 	BUCKET_TAG *walk = head;
 
 	while (walk->next_pos)
-	{
 		walk = POS_TO_PTR(hm->arr, walk->next_pos);
-#ifdef CELLAR_COALESCED_HASHING /* clang-format off */
-		ASSERT_POINTER_BOUNDS(walk, hm->arr, hm->arr + hm->capacity + hm->cellar.capacity - 1);
-#else
-		ASSERT_POINTER_BOUNDS(walk, hm->arr, hm->arr + hm->capacity - 1);
-#endif /* CELLAR_COALESCED_HASHING */ /* clang-format on */
-	}
 
 	return (walk);
 }
@@ -509,10 +441,6 @@ HASHMAP_TAG *HASHMAP_METHOD(new)(len_ty capacity)
 {
 	if (capacity < 1)
 		return (NULL);
-
-#ifdef POWER2_ROUNDUP_FUNC
-	capacity = power2_roundup(capacity);
-#endif /* POWER2_ROUNDUP_FUNC */
 
 #ifdef CELLAR_COALESCED_HASHING
 	/** https://en.wikipedia.org/wiki/Coalesced_hashing#The_cellar
@@ -632,18 +560,13 @@ HASHMAP_TAG *HASHMAP_METHOD(dup)(
  */
 HASHMAP_TAG *HASHMAP_METHOD(grow)(HASHMAP_TAG *const hm, const len_ty capacity)
 {
-	if (HASHMAP_METHOD(isvalid)(hm) == false)
+	if (HASHMAP_METHOD(isvalid)(hm) == false || capacity < 1)
 		return (NULL);
 
 	if (capacity <= hm->capacity)
 		return (hm);
 
-#ifdef POWER2_ROUNDUP_FUNC
-	HASHMAP_TAG *const restrict new_map =
-		HASHMAP_METHOD(new)(power2_roundup(capacity));
-#else
 	HASHMAP_TAG *const restrict new_map = HASHMAP_METHOD(new)(capacity);
-#endif /* POWER2_ROUNDUP_FUNC */
 
 	if (!new_map)
 		return (NULL);
@@ -800,11 +723,6 @@ bool HASHMAP_METHOD(remove)(
 		*dest = removed->data;
 
 	BUCKET_TAG *walk = POS_TO_PTR(hm->arr, removed->next_pos);
-#ifdef CELLAR_COALESCED_HASHING
-	ASSERT_POINTER_BOUNDS(walk, hm->arr, hm->arr + hm->capacity + hm->cellar.capacity - 1);
-#else
-	ASSERT_POINTER_BOUNDS(walk, hm->arr, hm->arr + hm->capacity - 1);
-#endif /* CELLAR_COALESCED_HASHING */
 
 	BUCKET_METHOD(unlink)(hm, removed);
 	*removed = (BUCKET_TAG){.key = u8mem_delete(removed->key)};
@@ -812,11 +730,6 @@ bool HASHMAP_METHOD(remove)(
 	{
 		BUCKET_TAG *const new_spot = &hm->arr[FOLD(walk->hash, hm->capacity)];
 		BUCKET_TAG *const next = POS_TO_PTR(hm->arr, walk->next_pos);
-#ifdef CELLAR_COALESCED_HASHING /* clang-format off */
-		ASSERT_POINTER_BOUNDS(next, hm->arr, hm->arr + hm->capacity + hm->cellar.capacity - 1);
-#else
-		ASSERT_POINTER_BOUNDS(next, hm->arr, hm->arr + hm->capacity - 1);
-#endif /* CELLAR_COALESCED_HASHING */ /* clang-format on */
 
 		walk->next_pos = 0;
 		BUCKET_METHOD(unlink)(hm, walk);
@@ -841,11 +754,6 @@ bool HASHMAP_METHOD(remove)(
 	if (removed < hm->arr + hm->capacity)
 	{
 		BUCKET_TAG *const bottom = POS_TO_PTR(hm->arr, hm->bottom_pos);
-		#ifdef CELLAR_COALESCED_HASHING /* clang-format off */
-		ASSERT_POINTER_BOUNDS(bottom, hm->arr, hm->arr + hm->capacity + hm->cellar.capacity - 1);
-		#else
-		ASSERT_POINTER_BOUNDS(bottom, hm->arr, hm->arr + hm->capacity - 1);
-		#endif /* CELLAR_COALESCED_HASHING */ /* clang-format on */
 
 		BUCKET_METHOD(insert_after)(hm, removed, bottom);
 	}
@@ -853,11 +761,6 @@ bool HASHMAP_METHOD(remove)(
 	#else
 	{
 		BUCKET_TAG *const top = POS_TO_PTR(hm->arr, hm->top_pos);
-		#ifdef CELLAR_COALESCED_HASHING /* clang-format off */
-		ASSERT_POINTER_BOUNDS(top, hm->arr, hm->arr + hm->capacity + hm->cellar.capacity - 1);
-		#else
-		ASSERT_POINTER_BOUNDS(top, hm->arr, hm->arr + hm->capacity - 1);
-		#endif /* CELLAR_COALESCED_HASHING */ /* clang-format on */
 
 		BUCKET_METHOD(insert_before)(hm, removed, top);
 	}
@@ -988,5 +891,3 @@ char *HASHMAP_METHOD(tostr)(
 #undef FOLD
 #undef POS_TO_PTR
 #undef PTR_TO_POS
-#undef ASSERT_MAX_POSITION
-#undef ASSERT_POINTER_BOUNDS

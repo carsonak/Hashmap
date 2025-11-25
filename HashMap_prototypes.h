@@ -9,6 +9,7 @@
 #include <stdbool.h> /* bool */
 #include <stdint.h>  /* fixed width types */
 
+#include "common_callback_types.h"
 #include "compiler_attributes_macros.h"
 #include "len_type.h"
 #include "u8mem/u8mem.h"

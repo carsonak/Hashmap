@@ -32,21 +32,7 @@ endmacro()
 
 # Loop over the 2 base files and their 4 base configs
 foreach(exec_type IN ITEMS benchmark time)
-    # --- Murmur3Hash Configurations ---
-    set(murmur3_base_defines "-DMURMURHASH3_x86_32_FUNC")
-    add_hashmap_variants(${exec_type} "murmur3" "${murmur3_base_defines}")
+    add_hashmap_variants(${exec_type} murmur3 -DMURMURHASH3_x86_32_FUNC)
 
-    set(murmur3_power2_defines "${murmur3_base_defines}"
-                               "-DPOWER2_ROUNDUP_FUNC"
-    )
-    add_hashmap_variants(
-        ${exec_type} "murmur3_power2" "${murmur3_power2_defines}"
-    )
-
-    # --- FNV-1a Configurations ---
-    set(fnv1a_base_defines "-DFNV32A_HASH_FUNC")
-    add_hashmap_variants(${exec_type} "fnv1a" "${fnv1a_base_defines}")
-
-    set(fnv1a_power2_defines "${fnv1a_base_defines}" "-DPOWER2_ROUNDUP_FUNC")
-    add_hashmap_variants(${exec_type} "fnv1a_power2" "${fnv1a_power2_defines}")
+    add_hashmap_variants(${exec_type} fnv1a -DFNV32A_HASH_FUNC)
 endforeach()
