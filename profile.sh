@@ -1,11 +1,32 @@
 #!/usr/bin/env bash
-# Build and run benchmarks for the HashMap under different tools.
-# USAGE: ./profile.sh [--cachegrind|--gprofng|--no-tool]
 
 # Fail fast
 set -e
 
-function run_benchmarks {
+function print_help {
+    cat <<EOF
+USAGE
+  $0 [OPTIONS] [SUITE]
+
+DESCRIPTION
+    Build and run HashMap benchmarks under different tools. SUITE is one of:
+    cachegrind, gprofng, no-tool or timing and defaults to timing if not given.
+
+OPTIONS
+    -h, --help
+        print this help message and exit.
+    -cNAME, -c NAME, --config=NAME
+        cmake presets configuration to use.
+EOF
+}
+
+function build {
+    config=$1
+    cmake --preset "$config" --fresh
+    cmake --build --preset "$config" -j 4
+}
+
+function run {
     if [[ $# -lt 2 ]]
     then echo "$0:$LINENO: invalid number of arguments" >&2
         return 1
@@ -16,62 +37,86 @@ function run_benchmarks {
 
     result_dir="data/$suite"
     if [[ $suite = "timing" ]]
-    then mkdir -vp "$result_dir/password_chars" "$result_dir/random_data" "$result_dir/source_code"
-    else mkdir -vp "$result_dir"
+    then rm -f -vrd "$result_dir/password_chars" "$result_dir/random_data" "$result_dir/source_code"
+        mkdir -vp "$result_dir/password_chars" "$result_dir/random_data" "$result_dir/source_code"
+    else rm -f -vrd "$result_dir"
+        mkdir -vp "$result_dir"
     fi
 
     for exe in $@
     do  base=$(basename "$exe")
         case $suite in
         cachegrind)
-            set -x
-            valgrind -q --tool=callgrind --cache-sim=yes --branch-sim=yes \
-                --compress-strings=no --callgrind-out-file="$result_dir/${base}.out" \
-                "$exe" -n 80000 -c 1021
+            operations=80000
+            initial_capacity=1021
+            sh -xc "valgrind -q --tool=callgrind --cache-sim=yes --branch-sim=yes \
+                --compress-strings=no --callgrind-out-file=$result_dir/${base}.out \
+                $exe -n $operations -c $initial_capacity"
             ;;
         gprofng)
-            set -x
-            gprofng collect app -p hi -O "$result_dir/${base}.er" "$exe"
+            sh -xc "gprofng collect app -p hi -O $result_dir/${base}.er $exe"
             ;;
-        no_tool)
-            set -x
-            "./$exe"
+        no-tool)
+            sh -xc "./$exe"
             ;;
         timing)
-            set -x
-            "./$exe" benchmarks/10mb-password_chars > "$result_dir/password_chars/$base.txt"
-            "./$exe" benchmarks/10mb-random_data > "$result_dir/random_data/$base.txt"
-            "./$exe" benchmarks/10mb-source_code > "$result_dir/source_code/$base.txt"
+            sh -xc "./$exe benchmarks/10mb-password_chars > $result_dir/password_chars/$base.txt"
+            sh -xc "./$exe benchmarks/10mb-random_data > $result_dir/random_data/$base.txt"
+            sh -xc "./$exe benchmarks/10mb-source_code > $result_dir/source_code/$base.txt"
             ;;
         *)
             echo "$0:$LINENO: unknown suite '$suite'" >&2
             return 1
             ;;
         esac
-
-        set +x
     done
 }
 
 CONFIG=release
-if [[ $1 = "--gprofng" ]] || [[ $1 = "--cachegrind" ]]
+while [[ $# -gt 0 ]]
+do case "$1" in
+    -c*)
+        if [[ $1 = -c ]]
+        then shift
+            CONFIG="$1"
+        else CONFIG="${1#-c}"
+        fi
+        ;;
+    --config=*)
+        CONFIG="${1#--config=}"
+        ;;
+    -h|--help)
+        print_help
+        exit 0
+        ;;
+    --*|-*)
+        echo "Unknown option: $1" >&2
+        exit 1
+        ;;
+    *)
+        break
+        ;;
+    esac
+
+    shift
+done
+
+SUITE="${1:-timing}"
+if [[ $SUITE = "gprofng" ]] || [[ $SUITE = "cachegrind" ]]
 then export CFLAGS="${CFLAGS:-} -g"
 fi
 
-cmake --preset "$CONFIG" --fresh
-cmake --build --preset "$CONFIG" -j 4
-
-case $1 in
---cachegrind)
-    run_benchmarks cachegrind "$(find "$CONFIG"/benchmarks -maxdepth 1 -name "benchmark_*")"
+case $SUITE in
+cachegrind|gprofng|no-tool)
+    build "$CONFIG"
+    run "$SUITE" "$(find "$CONFIG/benchmarks" -maxdepth 1 -name "benchmark_*")"
     ;;
---gprofng)
-    run_benchmarks gprofng "$(find "$CONFIG"/benchmarks -maxdepth 1 -name "benchmark_*")"
-    ;;
---no-tool)
-    run_benchmarks no_tool "$(find "$CONFIG"/benchmarks -maxdepth 1 -name "benchmark_*")"
+timing)
+    build "$CONFIG"
+    run timing "$(find "$CONFIG/benchmarks" -maxdepth 1 -name "time_*")"
     ;;
 *)
-    run_benchmarks timing "$(find "$CONFIG"/benchmarks -maxdepth 1 -name "time_*")"
+    echo "$0:$LINENO: unknown argument $SUITE" >&2
+    exit 1
     ;;
 esac
