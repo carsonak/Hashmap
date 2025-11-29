@@ -6,17 +6,20 @@ set -e
 function print_help {
     cat <<EOF
 USAGE
-  $0 [OPTIONS] [SUITE]
+  $0 [OPTIONS]
 
 DESCRIPTION
     Build and run HashMap benchmarks under different tools. SUITE is one of:
-    cachegrind, gprofng, no-tool or timing and defaults to timing if not given.
+    
 
 OPTIONS
     -h, --help
         print this help message and exit.
     -cNAME, -c NAME, --config=NAME
         cmake presets configuration to use.
+    -sNAME, -s NAME, --suite=NAME
+        test suite to run, can be one of cachegrind, gprofng, no-tool or timing.
+        Defaults to timing.
 EOF
 }
 
@@ -47,11 +50,15 @@ function run {
     do  base=$(basename "$exe")
         case $suite in
         cachegrind)
-            operations=80000
-            initial_capacity=1021
+            iters=80000
+            cap=1021
+            if [[ $exe == *stack* ]]
+            then iters=250000
+                cap=4093
+            fi
             sh -xc "valgrind -q --tool=callgrind --cache-sim=yes --branch-sim=yes \
                 --compress-strings=no --callgrind-out-file=$result_dir/${base}.out \
-                $exe -n $operations -c $initial_capacity"
+                $exe --iterations=$iters --capacity=$cap"
             ;;
         gprofng)
             sh -xc "gprofng collect app -p hi -O $result_dir/${base}.er $exe"
@@ -73,6 +80,7 @@ function run {
 }
 
 CONFIG=release
+SUITE=timing
 while [[ $# -gt 0 ]]
 do case "$1" in
     -c*)
@@ -89,6 +97,16 @@ do case "$1" in
         print_help
         exit 0
         ;;
+    -s*)
+        if [[ $1 = -s ]]
+        then shift
+            SUITE=$1
+        else SUITE="${1#-s}"
+        fi
+        ;;
+    --suite=*)
+        SUITE="${1#--suite=}"
+        ;;
     --*|-*)
         echo "Unknown option: $1" >&2
         exit 1
@@ -101,7 +119,6 @@ do case "$1" in
     shift
 done
 
-SUITE="${1:-timing}"
 if [[ $CONFIG = "release" ]]
 then export CFLAGS="${CFLAGS:-} -g"
 fi
