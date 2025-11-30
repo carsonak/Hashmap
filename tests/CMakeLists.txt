@@ -1,6 +1,8 @@
 include_directories(${PROJECT_SOURCE_DIR}/tau)
 
-add_executable(test_HashMap test_HashMap.c "${COMMON_SOURCES}")
+set(HASHMAP_COMMON_SOURCES ${HASHMAP_COMMON_SOURCES} HashMap.c)
+
+add_executable(test_HashMap test_HashMap.c "${HASHMAP_COMMON_SOURCES}")
 target_link_libraries(test_HashMap PRIVATE HashMap)
 add_test(NAME test_HashMap COMMAND test_HashMap --failed-output-only)
 

@@ -15,7 +15,10 @@
  * @param len length of the array of bytes.
  * @returns pointer to the initialised u8mem, NULL on failure.
  */
-u8mem *u8mem_new(const unsigned char *const restrict mem, const len_ty len)
+u8mem *u8mem_new(
+	const unsigned char *const restrict mem, const len_ty len,
+	mem_alloc *const alloc, void *alloc_context
+)
 {
 	if (len < 1)
 		return (NULL);
@@ -26,7 +29,7 @@ u8mem *u8mem_new(const unsigned char *const restrict mem, const len_ty len)
 	if (SIZE_MAX - mem_size < sizeof(u8mem))
 		return (NULL);
 
-	u8mem *const restrict m = xmalloc(sizeof(*m) + mem_size);
+	u8mem *const restrict m = alloc(alloc_context, sizeof(*m) + mem_size);
 
 	if (!m)
 		return (NULL);
@@ -43,12 +46,15 @@ u8mem *u8mem_new(const unsigned char *const restrict mem, const len_ty len)
  *
  * @param m pointer to the u8mem to free.
  */
-void *u8mem_delete(u8mem *const restrict m)
+void *u8mem_delete(
+	u8mem *const restrict m, mem_free *const dealloc, void *dealloc_context
+)
 {
 	if (m)
 		*m = (u8mem){0};
 
-	return (xfree(m));
+	dealloc(dealloc_context, m);
+	return (NULL);
 }
 
 /*!
@@ -70,7 +76,7 @@ int u8mem_compare(const u8mem m_a, const u8mem m_b)
  * @param m the u8mem to stringify.
  * @returns pointer to the string, NULL on failure.
  */
-char *u8mem_tostr(const u8mem m)
+char *u8mem_tostr(const u8mem m, mem_alloc *const alloc, void *alloc_context)
 {
 	const int s_len =
 		snprintf(NULL, 0, "(%" PRI_len ", %p)", m.len, (void *)m.buf);
@@ -78,7 +84,7 @@ char *u8mem_tostr(const u8mem m)
 	if (s_len < 0)
 		return (NULL);
 
-	char *const restrict s = xmalloc(sizeof(*s) * (s_len + 1));
+	char *const restrict s = alloc(alloc_context, sizeof(*s) * (s_len + 1));
 
 	if (s)
 		snprintf(s, s_len + 1, "(%" PRI_len ", %p)", m.len, (void *)m.buf);

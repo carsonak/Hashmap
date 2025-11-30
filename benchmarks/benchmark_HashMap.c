@@ -13,7 +13,6 @@
 #include <time.h>    // clock
 
 #include "HashMap.h"
-#include "u8mem.h"
 
 #define ERROR(message)                                                        \
 	fprintf(stderr, "%s:%d " message "\n", __FILE__, __LINE__)

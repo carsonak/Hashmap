@@ -7,7 +7,7 @@
 #include <time.h>   /* clock_gettime */
 
 #include "HashMap.h"
-#include "xalloc.h"
+#include "xalloc/xalloc.h"
 
 #define NSEC_IN_SEC (1000 * 1000 * 1000)
 

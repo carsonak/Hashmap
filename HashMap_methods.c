@@ -20,16 +20,6 @@
 #define COMMON_CALLBACKS_DATATYPE HASHMAP_DATATYPE
 #include "common_generic_callback_types.h"
 
-#if !defined FNV32A_HASH_FUNC
-	#ifndef MURMURHASH3_x86_32_HASH_FUNC
-		#define MURMURHASH3_x86_32_HASH_FUNC
-	#endif /* MURMURHASH3_x86_32_HASH_FUNC */
-
-	#include "MurmurHash3.c"
-#elif defined FNV32A_HASH_FUNC
-	#include "FNV-1a.c"
-#endif /* !defined FNV32A_HASH_FUNC */
-
 /************************* GENERICS BUILDER MACROS ***************************/
 
 #define HM_CONCAT0(tok0, tok1) tok0##tok1
@@ -50,6 +40,63 @@
 
 #define POS_TO_PTR(array, position) ((position) > 0 ? (array) + (position) - 1 : NULL)
 #define PTR_TO_POS(array, pointer) ((pointer) ? (pointer) - (array) + 1 : 0)
+
+/***************************** HASH FUNCTIONS ********************************/
+
+#if !defined FNV32A_HASH_FUNC
+	#ifndef MURMURHASH3_x86_32_HASH_FUNC
+		#define MURMURHASH3_x86_32_HASH_FUNC
+	#endif /* MURMURHASH3_x86_32_HASH_FUNC */
+
+	#include "MurmurHash3.c"
+#elif defined FNV32A_HASH_FUNC
+	#include "FNV-1a.c"
+#endif /* !defined FNV32A_HASH_FUNC */
+
+/***************************** MEM ALLOC *************************************/
+
+#ifndef HASHMAP_MEM_ALLOC
+	#define HASHMAP_MEM_ALLOC
+
+static void free_mem(void *context, void *ptr);
+static void *alloc_mem(void *context, size_t size) _malloc _malloc_free(
+	free_mem, 2
+) _alloc_size(2);
+
+/*!
+ * @brief deallocate a memory region.
+ *
+ * @param context pointer to context for the deallocator.
+ * @param ptr pointer to the memory region to deallocate.
+ */
+static void free_mem(void *context, void *ptr)
+{
+	#ifdef HASHMAP_ALLOCATOR_ARENA
+	arena_free((Arena *)context, ptr);
+	#else
+	(void)context;
+	xfree(ptr);
+	#endif /* HASHMAP_ALLOCATOR_ARENA */
+}
+
+/*!
+ * @brief return pointer to a new memory region of a given size.
+ *
+ * @param context pointer to additional context for the allocator.
+ * @param size number of bytes to allocate.
+ * @returns pointer to the memory region, NULL on error.
+ */
+static void *alloc_mem(void *context, size_t size)
+{
+	#ifdef HASHMAP_ALLOCATOR_ARENA
+	return (arena_alloc((Arena *)context, size, _alignof(u8mem)));
+	#else
+	(void)context;
+	return (xmalloc(size));
+	#endif /* HASHMAP_ALLOCATOR_ARENA */
+}
+
+#endif /* HASHMAP_MEM_ALLOC */
 
 /***************************** STATIC FUNCTIONS ******************************/
 
@@ -420,13 +467,20 @@ void *HASHMAP_METHOD(delete)(
 		if (BUCKET_METHOD(islive)(*bucket) == false)
 			continue;
 
-		bucket->key = u8mem_delete(bucket->key);
+#ifdef HASHMAP_ALLOCATOR_ARENA
+		bucket->key = u8mem_delete(bucket->key, free_mem, hm->arena);
+#else
+		bucket->key = u8mem_delete(bucket->key, free_mem, NULL);
+#endif /* HASHMAP_ALLOCATOR_ARENA */
 		if (data_free)
 			data_free(bucket->data);
 
 		*bucket = (BUCKET_TAG){0};
 	}
 
+#ifdef HASHMAP_ALLOCATOR_ARENA
+	arena_delete(hm->arena);
+#endif /* HASHMAP_ALLOCATOR_ARENA */
 	*hm = (HASHMAP_TAG){0};
 	return (xfree(hm));
 }
@@ -468,6 +522,12 @@ HASHMAP_TAG *HASHMAP_METHOD(new)(len_ty capacity)
 		return (NULL);
 
 	*map = (HASHMAP_TAG){.capacity = capacity};
+#ifdef HASHMAP_ALLOCATOR_ARENA
+	map->arena = arena_new();
+	if (!map->arena)
+		return (xfree(map));
+
+#endif /* HASHMAP_ALLOCATOR_ARENA */
 #ifdef CELLAR_COALESCED_HASHING
 	map->cellar.capacity = cellar_cap;
 #endif /* CELLAR_COALESCED_HASHING */
@@ -518,6 +578,12 @@ HASHMAP_TAG *HASHMAP_METHOD(dup)(
 		return (NULL);
 
 	*cpy = *hm;
+#ifdef HASHMAP_ALLOCATOR_ARENA
+	cpy->arena = arena_new();
+	if (!cpy->arena)
+		return (HASHMAP_METHOD(delete)(cpy, data_free));
+
+#endif /* HASHMAP_ALLOCATOR_ARENA */
 	len_ty i = hm->capacity;
 
 #ifdef CELLAR_COALESCED_HASHING
@@ -534,7 +600,12 @@ HASHMAP_TAG *HASHMAP_METHOD(dup)(
 			const u8mem *const key = hm->arr[i].key;
 			const HASHMAP_DATATYPE data = hm->arr[i].data;
 
-			cpy->arr[i].key = u8mem_new(key->buf, key->len);
+#ifdef HASHMAP_ALLOCATOR_ARENA
+			cpy->arr[i].key =
+				u8mem_new(key->buf, key->len, alloc_mem, cpy->arena);
+#else
+			cpy->arr[i].key = u8mem_new(key->buf, key->len, alloc_mem, NULL);
+#endif /* HASHMAP_ALLOCATOR_ARENA */
 			if (!cpy->arr[i].key)
 				return (HASHMAP_METHOD(delete)(cpy, data_free));
 
@@ -571,6 +642,11 @@ HASHMAP_TAG *HASHMAP_METHOD(grow)(HASHMAP_TAG *const hm, const len_ty capacity)
 	if (!new_map)
 		return (NULL);
 
+#ifdef HASHMAP_ALLOCATOR_ARENA
+	arena_delete(new_map->arena);
+	new_map->arena = hm->arena;
+	hm->arena = NULL;
+#endif /* HASHMAP_ALLOCATOR_ARENA */
 	len_ty i = hm->capacity;
 
 #ifdef CELLAR_COALESCED_HASHING
@@ -676,14 +752,26 @@ HASHMAP_DATATYPE *HASHMAP_METHOD(insert)(
 		return (&bucket->data);
 	}
 
-	u8mem *const restrict key_dup = u8mem_new(key.buf, key.len);
+#ifdef HASHMAP_ALLOCATOR_ARENA
+	u8mem *const restrict key_dup =
+		u8mem_new(key.buf, key.len, alloc_mem, map->arena);
+#else
+	u8mem *const restrict key_dup =
+		u8mem_new(key.buf, key.len, alloc_mem, NULL);
+#endif /* HASHMAP_ALLOCATOR_ARENA */
 
 	if (!key_dup)
 		return (NULL);
 
 	map = HASHMAP_METHOD(double_capacity)(map);
 	if (!map)
-		return (u8mem_delete(key_dup));
+	{
+#ifdef HASHMAP_ALLOCATOR_ARENA
+		return (u8mem_delete(key_dup, free_mem, map->arena));
+#else
+		return (u8mem_delete(key_dup, free_mem, NULL));
+#endif /* HASHMAP_ALLOCATOR_ARENA */
+	}
 
 	/* should never fail. */
 	bucket = HASHMAP_METHOD(place)(
@@ -725,7 +813,12 @@ bool HASHMAP_METHOD(remove)(
 	BUCKET_TAG *walk = POS_TO_PTR(hm->arr, removed->next_pos);
 
 	BUCKET_METHOD(unlink)(hm, removed);
-	*removed = (BUCKET_TAG){.key = u8mem_delete(removed->key)};
+#ifdef HASHMAP_ALLOCATOR_ARENA
+	*removed =
+		(BUCKET_TAG){.key = u8mem_delete(removed->key, free_mem, hm->arena)};
+#else
+	*removed = (BUCKET_TAG){.key = u8mem_delete(removed->key, free_mem, NULL)};
+#endif /* HASHMAP_ALLOCATOR_ARENA */
 	while (walk)
 	{
 		BUCKET_TAG *const new_spot = &hm->arr[FOLD(walk->hash, hm->capacity)];
@@ -766,9 +859,9 @@ bool HASHMAP_METHOD(remove)(
 	}
 
 	#endif /* CELLAR_COALESCED_HASHING */
-#endif /* EMPTY_BUCKET_STACK */
+#endif     /* EMPTY_BUCKET_STACK */
 #ifdef CELLAR_COALESCED_HASHING
-	if (removed >= hm->arr + hm->capacity)
+		if (removed >= hm->arr + hm->capacity)
 		hm->cellar.used--;
 	else
 #endif /* CELLAR_COALESCED_HASHING */
@@ -787,10 +880,13 @@ bool HASHMAP_METHOD(remove)(
  */
 static char *BUCKET_METHOD(tostr)(
 	const BUCKET_TAG bucket,
-	HM_CONCAT(stringify_data_, HASHMAP_UNIQUE_SUFFIX) * data_tostr
+	HM_CONCAT(stringify_data_, HASHMAP_UNIQUE_SUFFIX) * data_tostr,
+	mem_alloc *const alloc, mem_free *const dealloc,
+	void *restrict alloc_context
 )
 {
-	char *const restrict key_str = u8mem_tostr(*bucket.key);
+	char *const restrict key_str =
+		u8mem_tostr(*bucket.key, alloc, alloc_context);
 	char *const restrict data_str = data_tostr(bucket.data);
 	char *restrict bucket_str = NULL;
 
@@ -802,15 +898,18 @@ static char *BUCKET_METHOD(tostr)(
 	if (len < 1)
 		goto cleanup;
 
-	bucket_str = xmalloc(len);
+	bucket_str = alloc(alloc_context, len);
 	if (!bucket_str)
 		goto cleanup;
 
 	if (snprintf(bucket_str, len, "%s: %s", key_str, data_str) < 0)
-		bucket_str = xfree(bucket_str);
+	{
+		dealloc(alloc_context, bucket_str);
+		bucket_str = NULL;
+	}
 
 cleanup:
-	xfree(key_str);
+	dealloc(alloc_context, key_str);
 	xfree(data_str);
 	return (bucket_str);
 }
@@ -831,6 +930,9 @@ char *HASHMAP_METHOD(tostr)(
 	if (HASHMAP_METHOD(isvalid)(hm) == false || !data_tostr)
 		return (NULL);
 
+#ifdef HASHMAP_ALLOCATOR_ARENA
+	Arena *const arena = arena_new();
+#endif /* HASHMAP_ALLOCATOR_ARENA */
 	char *restrict hm_str = xcalloc(3, sizeof(*hm_str));
 
 	if (!hm_str)
@@ -849,8 +951,15 @@ char *HASHMAP_METHOD(tostr)(
 		if (BUCKET_METHOD(islive)(hm->arr[i]) == false)
 			continue;
 
-		char *const restrict bucket_str =
-			BUCKET_METHOD(tostr)(hm->arr[i], data_tostr);
+#ifdef HASHMAP_ALLOCATOR_ARENA
+		char *const restrict bucket_str = BUCKET_METHOD(tostr)(
+			hm->arr[i], data_tostr, alloc_mem, free_mem, arena
+		);
+#else
+		char *const restrict bucket_str = BUCKET_METHOD(tostr)(
+			hm->arr[i], data_tostr, alloc_mem, free_mem, NULL
+		);
+#endif /* HASHMAP_ALLOCATOR_ARENA */
 
 		if (!bucket_str)
 			return (xfree(hm_str));
@@ -871,11 +980,20 @@ char *HASHMAP_METHOD(tostr)(
 			s_len += b_len;
 		}
 
-		xfree(bucket_str);
+#ifdef HASHMAP_ALLOCATOR_ARENA
+		free_mem(arena, bucket_str);
+#else
+		free_mem(NULL, bucket_str);
+#endif /* HASHMAP_ALLOCATOR_ARENA */
 	}
 
 	return (hm_str);
 }
+
+#include "undef_compiler_attributes_macros.h"
+
+#undef FNV_32_PRIME
+#undef FNV1_32_INIT
 
 #undef HASHMAP_UNIQUE_SUFFIX
 #undef HASHMAP_DATATYPE

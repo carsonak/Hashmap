@@ -1,6 +1,7 @@
 #ifndef DS_U8MEM
 #define DS_U8MEM
 
+#include "common_callback_types.h"
 #include "compiler_attributes_macros.h"
 #include "len_type.h"
 
@@ -17,12 +18,17 @@ typedef struct u8mem
 
 /* alloc */
 
-void *u8mem_delete(u8mem *const restrict m);
+void *u8mem_delete(
+	u8mem *const restrict m, mem_free *const free_mem, void *dealloc_context
+);
 u8mem *u8mem_new(
-	const unsigned char *const restrict mem, const len_ty len
-) _malloc _malloc_free(u8mem_delete);
+	const unsigned char *const restrict mem, const len_ty len,
+	mem_alloc *const alloc_mem, void *alloc_context
+) _malloc _malloc_free(u8mem_delete, 1);
 
 int u8mem_compare(const u8mem a, const u8mem b);
-char *u8mem_tostr(const u8mem m) _malloc;
+char *u8mem_tostr(
+	const u8mem m, mem_alloc *const alloc, void *alloc_context
+) _malloc;
 
 #endif /* DS_U8MEM */

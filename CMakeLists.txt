@@ -30,21 +30,20 @@ add_compile_options(
     "$<$<CONFIG:RelWithDebInfo>:-fsanitize=address,undefined>"
     "$<$<AND:$<C_COMPILER_ID:GNU,Clang>,$<CONFIG:Debug>>:-Og>"
 )
-add_link_options(
-    "$<$<CONFIG:RelWithDebInfo>:-fsanitize=address,undefined>"
-)
+add_link_options("$<$<CONFIG:RelWithDebInfo>:-fsanitize=address,undefined>")
 
 add_library(HashMap INTERFACE)
 target_include_directories(HashMap INTERFACE ${CMAKE_CURRENT_LIST_DIR})
+target_link_libraries(HashMap INTERFACE arena)
 
-set(COMMON_SOURCES ${CMAKE_CURRENT_LIST_DIR}/HashMap.c)
+set(HASHMAP_COMMON_SOURCES)
 
 add_subdirectory(arena-alloc)
-add_subdirectory(xalloc)
+add_subdirectory(internal_headers)
 add_subdirectory(u8mem)
-add_subdirectory(benchmarks)
+add_subdirectory(xalloc)
 
-target_link_libraries(HashMap INTERFACE arena)
+add_subdirectory(benchmarks)
 
 # Tests are automatically built if this is the main project
 option(HASHMAP_ENABLE_TESTING "Enable tests for bigint_calc"

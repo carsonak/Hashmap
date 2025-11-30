@@ -13,6 +13,12 @@
 #include "len_type.h"
 #include "u8mem/u8mem.h"
 
+// #define HASHMAP_ALLOCATOR_ARENA
+
+#ifdef HASHMAP_ALLOCATOR_ARENA
+	#include "arena.h"
+#endif /* HASHMAP_ALLOCATOR_ARENA */
+
 /************************* GENERICS BUILDER MACROS ***************************/
 
 #define HM_CONCAT0(tok0, tok1) tok0##tok1
@@ -75,16 +81,24 @@ struct HASHMAP_TAG
 	len_ty capacity;
 	/*! @public  number of used Buckets. */
 	len_ty used;
+
 #ifdef CELLAR_COALESCED_HASHING
 	/*! @protected cellar for handling colliding buckets. */
 	struct CELLAR_TAG cellar;
 #endif /* CELLAR_COALESCED_HASHING */
+
+#ifdef HASHMAP_ALLOCATOR_ARENA
+	/*! @private arena used to store keys. */
+	Arena *restrict arena;
+#endif /* HASHMAP_ALLOCATOR_ARENA */
+
 #ifdef EMPTY_BUCKET_STACK
 	/*! @protected position of the bucket at the top of the unused Buckets stack. */
 	size_t top_pos;
 	/*! @protected position of the bucket at the bottom of the unused Buckets stack. */
 	size_t bottom_pos;
 #endif /* EMPTY_BUCKET_STACK */
+
 	/*! @protected array of Buckets. */
 	struct BUCKET_TAG arr[];
 };

@@ -133,7 +133,7 @@ timing)
     run timing "$(find "$CONFIG/benchmarks" -maxdepth 1 -name "time_*")"
     ;;
 *)
-    echo "$0:$LINENO: unknown argument $SUITE" >&2
+    echo "$0:$LINENO: unknown test suite $SUITE" >&2
     exit 1
     ;;
 esac

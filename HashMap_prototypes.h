@@ -11,7 +11,6 @@
 
 #include "common_callback_types.h"
 #include "compiler_attributes_macros.h"
-#include "len_type.h"
 #include "u8mem/u8mem.h"
 
 #define COMMON_CALLBACKS_UNIQUE_SUFFIX HASHMAP_UNIQUE_SUFFIX
@@ -69,6 +68,8 @@ char *HASHMAP_METHOD(tostr)(
 	const HASHMAP_TAG *const restrict hm,
 	HM_CONCAT(stringify_data_, HASHMAP_UNIQUE_SUFFIX) * data_tostr
 );
+
+#include "undef_compiler_attributes_macros.h"
 
 #undef HASHMAP_UNIQUE_SUFFIX
 #undef HASHMAP_DATATYPE
