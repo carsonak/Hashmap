@@ -36,7 +36,7 @@ add_library(HashMap INTERFACE)
 target_include_directories(HashMap INTERFACE ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(HashMap INTERFACE arena)
 
-set(HASHMAP_COMMON_SOURCES)
+# set(HASHMAP_COMMON_SOURCES)
 
 add_subdirectory(arena-alloc)
 add_subdirectory(internal_headers)
