@@ -67,9 +67,9 @@ function run {
             sh -xc "./$exe"
             ;;
         timing)
-            sh -xc "./$exe benchmarks/10mb-password_chars > $result_dir/password_chars/$base.txt"
-            sh -xc "./$exe benchmarks/10mb-random_data > $result_dir/random_data/$base.txt"
-            sh -xc "./$exe benchmarks/10mb-source_code > $result_dir/source_code/$base.txt"
+            sh -xc "./$exe benchmarks/20MiB-password_chars > $result_dir/password_chars/$base.txt"
+            sh -xc "./$exe benchmarks/20MiB-random_data > $result_dir/random_data/$base.txt"
+            sh -xc "./$exe benchmarks/20MiB-name_chars > $result_dir/source_code/$base.txt"
             ;;
         *)
             echo "$0:$LINENO: unknown suite '$suite'" >&2

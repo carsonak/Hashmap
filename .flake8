@@ -1,0 +1,60 @@
+[flake8]
+extend-exclude =
+    # ignore cache directories
+    .mypy_cache,
+    # ignore vscode configurations
+    .vscode,
+
+# Plugins required before running checker
+require-plugins =
+    # Allow reading of config from pyproject.toml
+    flake8-pyprojecttoml
+    # Docstring checker
+    flake8-docstrings
+    # String literals quoting
+    flake8-literal
+    # Empty line after certain code blocks
+    flake8-clean-block
+    # PEP8 naming conventions
+    pep8-naming
+    # catch bugs
+    flake8-bugbear
+    dlint
+    # Open Stack Style Guide
+    hacking
+    # Keep it simple stupid
+    flake8-simplify
+    # test cohesion of classes and functions
+    cohesion
+    # Enforces mocks to follow specs of mocked
+    flake8-mock-spec
+    # Check noqa comments
+    flake8-noqa
+    # Check shadowing of builtin names
+    flake8-builtins
+
+# Enable PyFlakes syntax checking of doctests in docstrings
+doctests = True
+
+# Enforce google docstring convention
+docstring-convention = google
+
+extend-ignore =
+    # Ignore cohesion checks
+    H601,
+    # Ignore multiple imports per line
+    H301,
+
+extend-select =
+    # Extra bugbear checks
+    B9,
+
+# hacking test files options
+enable-extensions = H2,
+
+# Preffered quotes
+literal-inline-quotes = double
+literal-multiline-quotes = double
+
+# noqa rules
+noqa-require-code = True

@@ -10,6 +10,7 @@
 #include "xalloc/xalloc.h"
 
 #define NSEC_IN_SEC (1000 * 1000 * 1000)
+#define ARRAY_LEN(arr) (sizeof(arr) / sizeof(*(arr)))
 
 struct hashmap_stats
 {
@@ -18,7 +19,7 @@ struct hashmap_stats
 	double avg_chain_len;
 };
 
-static unsigned char buffer[10 * 1000 * 1000];
+static unsigned char buffer[20 * 1000 * 1000];
 
 static struct timespec timespec_add(struct timespec a, const struct timespec b)
 {
@@ -98,6 +99,11 @@ static void hm_stats_print(const HashMap_uint *const map)
 	printf(", longest_chain_length: %u\n", stats.longest_chain_len);
 }
 
+static intmax_t iceil(const intmax_t dividend, const intmax_t divisor)
+{
+	return (dividend + (divisor - 1)) / divisor;
+}
+
 static void aggregate_timings(
 	struct timespec *const restrict dest, const size_t block_size,
 	const struct timespec *const restrict timings, const size_t len
@@ -112,9 +118,11 @@ static void aggregate_timings(
 static void
 print_timings(const struct timespec *const restrict timings, const size_t len)
 {
+	const unsigned interval = 100 / len;
+
 	for (unsigned int i = 0; i < len; i++)
 	{
-		printf("%.2u%%-%.2u%%: ", i * 5, i * 5 + 5);
+		printf("%.2u%%-%.2u%%: ", i * interval, i * interval + interval);
 		printf("%ld", timings[i].tv_sec);
 		printf(".%.9lds", timings[i].tv_nsec);
 		if (i < len - 1)
@@ -212,15 +220,15 @@ static bool profile_insertions(
 	printf(", expansions: %2zu", expansions);
 	printf(", time: %ld", total_time.tv_sec);
 	printf(".%.9lds\n", total_time.tv_nsec);
-	const size_t percent5 =
-		(map->capacity * 5) / 100 + (bool)((map->capacity * 5) % 100);
-	struct timespec intervals[20] = {0};
+	struct timespec intervals[100] = {0};
 
 	/* These are the timings for the insertion of a number of keys equal to */
-	/* 5% of the HashMap capacity till the maximum number of inserts given. */
+	/* 1% of the HashMap capacity till the maximum number of inserts given. */
 	printf("Percent interval insertion times: ");
-	aggregate_timings(intervals, percent5, timings, i);
-	print_timings(intervals, 20);
+	aggregate_timings(
+		intervals, iceil(map->capacity, ARRAY_LEN(intervals)), timings, i
+	);
+	print_timings(intervals, ARRAY_LEN(intervals));
 cleanup:
 	xfree(timings);
 	hm_uint_delete(map, NULL);
@@ -323,15 +331,15 @@ static bool profile_removes(
 	printf("removes: %4zu", removes);
 	printf(", time: %ld", total_time.tv_sec);
 	printf(".%.9lds\n", total_time.tv_nsec);
-	const size_t percent5 =
-		(map->capacity * 5) / 100 + (bool)((map->capacity * 5) % 100);
-	struct timespec intervals[20] = {0};
+	struct timespec intervals[100] = {0};
 
 	/* These are the timings for the removal of a number of keys equal to */
-	/* 5% of HashMap capacity  from the HashMap till empty. */
+	/* 1% of HashMap capacity  from the HashMap till empty. */
 	printf("Percent interval removal times: ");
-	aggregate_timings(intervals, percent5, timings, i);
-	print_timings(intervals, 20);
+	aggregate_timings(
+		intervals, iceil(map->capacity, ARRAY_LEN(intervals)), timings, i
+	);
+	print_timings(intervals, ARRAY_LEN(intervals));
 	xfree(timings);
 	return (true);
 }
@@ -342,7 +350,7 @@ static bool profile_general(
 {
 	HashMap_uint *restrict map = *table;
 	const size_t cap = map->capacity;
-	const size_t percent5 = (cap * 5) / 100 + (bool)((cap * 5) % 100);
+	const size_t one_percent = (cap * 5) / 100 + (bool)((cap * 5) % 100);
 
 	printf("------------------------- searches -------------------------\n");
 	unsigned int i = 0;
@@ -350,7 +358,7 @@ static bool profile_general(
 	for (; i < cap * HASHMAP_MAX_LOAD_FACTOR;)
 	{
 		unsigned int j = 0;
-		for (; j < percent5 && i + j < cap * HASHMAP_MAX_LOAD_FACTOR; j++)
+		for (; j < one_percent && i + j < cap * HASHMAP_MAX_LOAD_FACTOR; j++)
 		{
 			const u8mem key = {
 				.len = key_size, .buf = &buffer[(i + j) * key_size]
@@ -434,7 +442,7 @@ int main(int argc, char *argv[])
 		printf(
 			"------------------------- insertions -------------------------\n"
 		);
-		for (len_ty cap = 8; cap <= 8192; cap *= 2)
+		for (len_ty cap = 8; cap <= 1 << 14; cap *= 2)
 		{
 			if (!profile_insertions(
 					cap - 1, (cap - 1) * HASHMAP_MAX_LOAD_FACTOR, key_sizes[i]
@@ -444,8 +452,8 @@ int main(int argc, char *argv[])
 			putchar('\n');
 		}
 
-		/* Using prime number for initial capacity. */
-		HashMap_uint *restrict map = hm_uint_new(8191);
+		/* Using prime number less than a power of 2 for initial capacity. */
+		HashMap_uint *restrict map = hm_uint_new(16381);
 
 		if (!map)
 			return (1);
